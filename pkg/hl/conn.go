@@ -56,7 +56,11 @@ func (c *Conn) Execute(request Request) (Response, error) {
 	c.conn.SetReadDeadline(time.Now().Add(responseTimeout))
 	defer c.conn.SetReadDeadline(time.Time{})
 
-	return parseResponse(c.reader)
+	response, err := parseResponse(c.reader)
+	if err == nil {
+		err = ReturnCodeAsError(response.ReturnCode)
+	}
+	return response, err
 }
 
 func parseResponse(reader *bufio.Reader) (Response, error) {

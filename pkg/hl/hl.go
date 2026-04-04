@@ -1,5 +1,12 @@
 package hl
 
+import (
+	"fmt"
+	"strconv"
+
+	"github.com/ftl/hamradio"
+)
+
 type Request struct {
 	Command string
 	Args    []string
@@ -9,6 +16,50 @@ type Response struct {
 	CommandEcho string
 	Data        map[string]string
 	ReturnCode  ReturnCode
+}
+
+func (r Response) GetString(key string) (string, error) {
+	result, ok := r.Data[key]
+	if !ok {
+		return "", fmt.Errorf("no %s value", key)
+	}
+	return result, nil
+}
+
+func (r Response) GetInt(key string) (int, error) {
+	value, ok := r.Data[key]
+	if !ok {
+		return 0, fmt.Errorf("no %s value", key)
+	}
+	result, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, fmt.Errorf("cannot parse %s value: %w", key, err)
+	}
+	return result, nil
+}
+
+func (r Response) GetFloat64(key string) (float64, error) {
+	value, ok := r.Data[key]
+	if !ok {
+		return 0, fmt.Errorf("no %s value", key)
+	}
+	result, err := strconv.ParseFloat(value, 64)
+	if err != nil {
+		return 0, fmt.Errorf("cannot parse %s value: %w", key, err)
+	}
+	return result, nil
+}
+
+func (r Response) GetBool(key string) (bool, error) {
+	value, ok := r.Data[key]
+	if !ok {
+		return false, fmt.Errorf("no %s value", key)
+	}
+	result, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, fmt.Errorf("cannot parse %s value: %w", key, err)
+	}
+	return result, nil
 }
 
 type ReturnCode int
@@ -38,3 +89,22 @@ const (
 	RigLimitExceeded
 	RigAccessDenied
 )
+
+type VFO string
+
+const (
+	VFOA     VFO = "VFOA"
+	VFOB     VFO = "VFOB"
+	VFOC     VFO = "VFOC"
+	CurrVFO  VFO = "currVFO"
+	MainVFO  VFO = "Main"
+	SubVFO   VFO = "Sub"
+	TXVFO    VFO = "TX"
+	RXVFO    VFO = "RX"
+	MainAVFO VFO = "MainA"
+	MainBVFO VFO = "MainB"
+	SubAVFO  VFO = "SubA"
+	SubBVFO  VFO = "SubB"
+)
+
+type Frequency = hamradio.Frequency
