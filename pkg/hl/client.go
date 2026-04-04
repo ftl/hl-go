@@ -67,3 +67,691 @@ func (c *RigClient) GetFrequency(vfo VFO) (Frequency, error) {
 func (c *RigClient) SetFrequency(vfo VFO, frequency Frequency) error {
 	return c.set("\\set_freq", string(vfo), frequencyToHL(frequency))
 }
+
+func (c *RigClient) GetMode(vfo VFO) (string, int, error) {
+	response, err := c.get("\\get_mode", string(vfo))
+	if err != nil {
+		return "", 0, err
+	}
+
+	mode, err := response.GetString("Mode")
+	if err != nil {
+		return "", 0, err
+	}
+
+	passband, err := response.GetInt("Passband")
+	if err != nil {
+		return "", 0, err
+	}
+
+	return mode, passband, nil
+}
+
+func (c *RigClient) SetMode(vfo VFO, mode string, passband int) error {
+	return c.set("\\set_mode", string(vfo), mode, fmt.Sprintf("%d", passband))
+}
+
+func (c *RigClient) GetVFO() (VFO, error) {
+	response, err := c.get("\\get_vfo")
+	if err != nil {
+		return "", err
+	}
+
+	vfo, err := response.GetString("VFO")
+	if err != nil {
+		return "", err
+	}
+
+	return VFO(vfo), nil
+}
+
+func (c *RigClient) SetVFO(vfo VFO) error {
+	return c.set("\\set_vfo", string(vfo))
+}
+
+func (c *RigClient) GetRIT(vfo VFO) (int, error) {
+	response, err := c.get("\\get_rit", string(vfo))
+	if err != nil {
+		return 0, err
+	}
+
+	rit, err := response.GetInt("RIT")
+	if err != nil {
+		return 0, err
+	}
+
+	return rit, nil
+}
+
+func (c *RigClient) SetRIT(vfo VFO, rit int) error {
+	return c.set("\\set_rit", string(vfo), fmt.Sprintf("%d", rit))
+}
+
+func (c *RigClient) GetXIT(vfo VFO) (int, error) {
+	response, err := c.get("\\get_xit", string(vfo))
+	if err != nil {
+		return 0, err
+	}
+
+	xit, err := response.GetInt("XIT")
+	if err != nil {
+		return 0, err
+	}
+
+	return xit, nil
+}
+
+func (c *RigClient) SetXIT(vfo VFO, xit int) error {
+	return c.set("\\set_xit", string(vfo), fmt.Sprintf("%d", xit))
+}
+
+func (c *RigClient) GetPTT(vfo VFO) (int, error) {
+	response, err := c.get("\\get_ptt", string(vfo))
+	if err != nil {
+		return 0, err
+	}
+
+	ptt, err := response.GetInt("PTT")
+	if err != nil {
+		return 0, err
+	}
+
+	return ptt, nil
+}
+
+func (c *RigClient) SetPTT(vfo VFO, ptt int) error {
+	return c.set("\\set_ptt", string(vfo), fmt.Sprintf("%d", ptt))
+}
+
+func (c *RigClient) GetSplitVFO(vfo VFO) (int, VFO, error) {
+	response, err := c.get("\\get_split_vfo", string(vfo))
+	if err != nil {
+		return 0, "", err
+	}
+
+	split, err := response.GetInt("Split")
+	if err != nil {
+		return 0, "", err
+	}
+
+	txVFO, err := response.GetString("TX VFO")
+	if err != nil {
+		return 0, "", err
+	}
+
+	return split, VFO(txVFO), nil
+}
+
+func (c *RigClient) SetSplitVFO(vfo VFO, split int, txVFO VFO) error {
+	return c.set("\\set_split_vfo", string(vfo), fmt.Sprintf("%d", split), string(txVFO))
+}
+
+func (c *RigClient) GetSplitFrequency(vfo VFO) (Frequency, error) {
+	response, err := c.get("\\get_split_freq", string(vfo))
+	if err != nil {
+		return 0, err
+	}
+
+	frequency, err := response.GetFloat64("TX Frequency")
+	if err != nil {
+		return 0, err
+	}
+
+	return Frequency(frequency), nil
+}
+
+func (c *RigClient) SetSplitFrequency(vfo VFO, txFrequency Frequency) error {
+	return c.set("\\set_split_freq", string(vfo), frequencyToHL(txFrequency))
+}
+
+func (c *RigClient) GetSplitMode(vfo VFO) (string, int, error) {
+	response, err := c.get("\\get_split_mode", string(vfo))
+	if err != nil {
+		return "", 0, err
+	}
+
+	mode, err := response.GetString("TX Mode")
+	if err != nil {
+		return "", 0, err
+	}
+
+	passband, err := response.GetInt("TX Passband")
+	if err != nil {
+		return "", 0, err
+	}
+
+	return mode, passband, nil
+}
+
+func (c *RigClient) SetSplitMode(vfo VFO, txMode string, txPassband int) error {
+	return c.set("\\set_split_mode", string(vfo), txMode, fmt.Sprintf("%d", txPassband))
+}
+
+func (c *RigClient) GetAntenna(vfo VFO, antCurr int) (int, int, int, int, error) {
+	response, err := c.get("\\get_ant", string(vfo), fmt.Sprintf("%d", antCurr))
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+
+	ant, err := response.GetInt("AntCurr")
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+
+	option, err := response.GetInt("Option")
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+
+	antTx, err := response.GetInt("AntTx")
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+
+	antRx, err := response.GetInt("AntRx")
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+
+	return ant, option, antTx, antRx, nil
+}
+
+func (c *RigClient) SetAntenna(vfo VFO, antenna int, option int) error {
+	return c.set("\\set_ant", string(vfo), fmt.Sprintf("%d", antenna), fmt.Sprintf("%d", option))
+}
+
+func (c *RigClient) GetFunc(vfo VFO, funcName string) (int, error) {
+	response, err := c.get("\\get_func", string(vfo), funcName)
+	if err != nil {
+		return 0, err
+	}
+
+	status, err := response.GetInt("Func Status")
+	if err != nil {
+		return 0, err
+	}
+
+	return status, nil
+}
+
+func (c *RigClient) SetFunc(vfo VFO, funcName string, status int) error {
+	return c.set("\\set_func", string(vfo), funcName, fmt.Sprintf("%d", status))
+}
+
+func (c *RigClient) GetLevel(vfo VFO, levelName string) (float64, error) {
+	response, err := c.get("\\get_level", string(vfo), levelName)
+	if err != nil {
+		return 0, err
+	}
+
+	value, err := response.GetFloat64("Level Value")
+	if err != nil {
+		return 0, err
+	}
+
+	return value, nil
+}
+
+func (c *RigClient) SetLevel(vfo VFO, levelName string, value float64) error {
+	return c.set("\\set_level", string(vfo), levelName, fmt.Sprintf("%f", value))
+}
+
+func (c *RigClient) GetParm(parmName string) (string, error) {
+	response, err := c.get("\\get_parm", parmName)
+	if err != nil {
+		return "", err
+	}
+
+	value, err := response.GetString("Parm Value")
+	if err != nil {
+		return "", err
+	}
+
+	return value, nil
+}
+
+func (c *RigClient) SetParm(parmName string, value string) error {
+	return c.set("\\set_parm", parmName, value)
+}
+
+func (c *RigClient) GetMemory(vfo VFO) (int, error) {
+	response, err := c.get("\\get_mem", string(vfo))
+	if err != nil {
+		return 0, err
+	}
+
+	memory, err := response.GetInt("Memory#")
+	if err != nil {
+		return 0, err
+	}
+
+	return memory, nil
+}
+
+func (c *RigClient) SetMemory(vfo VFO, memory int) error {
+	return c.set("\\set_mem", string(vfo), fmt.Sprintf("%d", memory))
+}
+
+func (c *RigClient) SetBank(vfo VFO, bank int) error {
+	return c.set("\\set_bank", string(vfo), fmt.Sprintf("%d", bank))
+}
+
+func (c *RigClient) VFOOp(vfo VFO, op string) error {
+	return c.set("\\vfo_op", string(vfo), op)
+}
+
+func (c *RigClient) Scan(vfo VFO, scanFct string, scanChannel int) error {
+	return c.set("\\scan", string(vfo), scanFct, fmt.Sprintf("%d", scanChannel))
+}
+
+func (c *RigClient) GetRepeaterShift(vfo VFO) (string, error) {
+	response, err := c.get("\\get_rptr_shift", string(vfo))
+	if err != nil {
+		return "", err
+	}
+
+	shift, err := response.GetString("Rptr Shift")
+	if err != nil {
+		return "", err
+	}
+
+	return shift, nil
+}
+
+func (c *RigClient) SetRepeaterShift(vfo VFO, shift string) error {
+	return c.set("\\set_rptr_shift", string(vfo), shift)
+}
+
+func (c *RigClient) GetRepeaterOffset(vfo VFO) (int, error) {
+	response, err := c.get("\\get_rptr_offs", string(vfo))
+	if err != nil {
+		return 0, err
+	}
+
+	offset, err := response.GetInt("Rptr Offset")
+	if err != nil {
+		return 0, err
+	}
+
+	return offset, nil
+}
+
+func (c *RigClient) SetRepeaterOffset(vfo VFO, offset int) error {
+	return c.set("\\set_rptr_offs", string(vfo), fmt.Sprintf("%d", offset))
+}
+
+func (c *RigClient) GetCTCSSCode(vfo VFO) (int, error) {
+	response, err := c.get("\\get_ctcss_tone", string(vfo))
+	if err != nil {
+		return 0, err
+	}
+
+	code, err := response.GetInt("CTCSS Tone")
+	if err != nil {
+		return 0, err
+	}
+
+	return code, nil
+}
+
+func (c *RigClient) SetCTCSSCode(vfo VFO, code int) error {
+	return c.set("\\set_ctcss_tone", string(vfo), fmt.Sprintf("%d", code))
+}
+
+func (c *RigClient) GetDCSCode(vfo VFO) (int, error) {
+	response, err := c.get("\\get_dcs_code", string(vfo))
+	if err != nil {
+		return 0, err
+	}
+
+	code, err := response.GetInt("DCS Code")
+	if err != nil {
+		return 0, err
+	}
+
+	return code, nil
+}
+
+func (c *RigClient) SetDCSCode(vfo VFO, code int) error {
+	return c.set("\\set_dcs_code", string(vfo), fmt.Sprintf("%d", code))
+}
+
+func (c *RigClient) GetCTCSSSquelch(vfo VFO) (int, error) {
+	response, err := c.get("\\get_ctcss_sql", string(vfo))
+	if err != nil {
+		return 0, err
+	}
+
+	sql, err := response.GetInt("CTCSS Sql")
+	if err != nil {
+		return 0, err
+	}
+
+	return sql, nil
+}
+
+func (c *RigClient) SetCTCSSSquelch(vfo VFO, sql int) error {
+	return c.set("\\set_ctcss_sql", string(vfo), fmt.Sprintf("%d", sql))
+}
+
+func (c *RigClient) GetDCSSquelch(vfo VFO) (int, error) {
+	response, err := c.get("\\get_dcs_sql", string(vfo))
+	if err != nil {
+		return 0, err
+	}
+
+	sql, err := response.GetInt("DCS Sql")
+	if err != nil {
+		return 0, err
+	}
+
+	return sql, nil
+}
+
+func (c *RigClient) SetDCSSquelch(vfo VFO, sql int) error {
+	return c.set("\\set_dcs_sql", string(vfo), fmt.Sprintf("%d", sql))
+}
+
+// Tuning Step Commands
+
+func (c *RigClient) GetTuningStep(vfo VFO) (int, error) {
+	response, err := c.get("\\get_ts", string(vfo))
+	if err != nil {
+		return 0, err
+	}
+
+	ts, err := response.GetInt("Tuning Step")
+	if err != nil {
+		return 0, err
+	}
+
+	return ts, nil
+}
+
+func (c *RigClient) SetTuningStep(vfo VFO, ts int) error {
+	return c.set("\\set_ts", string(vfo), fmt.Sprintf("%d", ts))
+}
+
+// Morse/DTMF Commands
+
+func (c *RigClient) SendMorse(morse string) error {
+	return c.set("\\send_morse", morse)
+}
+
+func (c *RigClient) StopMorse() error {
+	return c.set("\\stop_morse")
+}
+
+func (c *RigClient) WaitMorse() error {
+	return c.set("\\wait_morse")
+}
+
+func (c *RigClient) SendDTMF(digits string) error {
+	return c.set("\\send_dtmf", digits)
+}
+
+func (c *RigClient) ReceiveDTMF() (string, error) {
+	response, err := c.get("\\recv_dtmf")
+	if err != nil {
+		return "", err
+	}
+
+	dtmf, err := response.GetString("Digits")
+	if err != nil {
+		return "", err
+	}
+
+	return dtmf, nil
+}
+
+func (c *RigClient) GetDCD() (int, error) {
+	response, err := c.get("\\get_dcd")
+	if err != nil {
+		return 0, err
+	}
+
+	dcd, err := response.GetInt("DCD")
+	if err != nil {
+		return 0, err
+	}
+
+	return dcd, nil
+}
+
+func (c *RigClient) SendVoiceMemory(msgnum int) error {
+	return c.set("\\send_voice_mem", fmt.Sprintf("%d", msgnum))
+}
+
+func (c *RigClient) Reset(reset int) error {
+	return c.set("\\reset", fmt.Sprintf("%d", reset))
+}
+
+func (c *RigClient) SetPowerStatus(status int) error {
+	return c.set("\\set_powerstat", fmt.Sprintf("%d", status))
+}
+
+func (c *RigClient) GetPowerStatus() (int, error) {
+	response, err := c.get("\\get_powerstat")
+	if err != nil {
+		return 0, err
+	}
+
+	status, err := response.GetInt("Power Status")
+	if err != nil {
+		return 0, err
+	}
+
+	return status, nil
+}
+
+func (c *RigClient) GetInfo() (string, error) {
+	response, err := c.get("\\get_info")
+	if err != nil {
+		return "", err
+	}
+
+	info, err := response.GetString("Info")
+	if err != nil {
+		return "", err
+	}
+
+	return info, nil
+}
+
+func (c *RigClient) GetRigInfo() (string, error) {
+	response, err := c.get("\\get_rig_info")
+	if err != nil {
+		return "", err
+	}
+
+	info, err := response.GetString("Info")
+	if err != nil {
+		return "", err
+	}
+
+	return info, nil
+}
+
+func (c *RigClient) GetVFOInfo(vfo VFO) (Frequency, string, int, int, int, error) {
+	response, err := c.get("\\get_vfo_info", string(vfo))
+	if err != nil {
+		return 0, "", 0, 0, 0, err
+	}
+
+	freq, err := response.GetFloat64("Freq")
+	if err != nil {
+		return 0, "", 0, 0, 0, err
+	}
+
+	mode, err := response.GetString("Mode")
+	if err != nil {
+		return 0, "", 0, 0, 0, err
+	}
+
+	width, err := response.GetInt("Width")
+	if err != nil {
+		return 0, "", 0, 0, 0, err
+	}
+
+	split, err := response.GetInt("Split")
+	if err != nil {
+		return 0, "", 0, 0, 0, err
+	}
+
+	satMode, err := response.GetInt("SatMode")
+	if err != nil {
+		return 0, "", 0, 0, 0, err
+	}
+
+	return Frequency(freq), mode, width, split, satMode, nil
+}
+
+func (c *RigClient) DumpState() (string, error) {
+	response, err := c.get("\\dump_state")
+	if err != nil {
+		return "", err
+	}
+
+	state, err := response.GetString("State")
+	if err != nil {
+		return "", err
+	}
+
+	return state, nil
+}
+
+func (c *RigClient) DumpCaps() (string, error) {
+	response, err := c.get("\\dump_caps")
+	if err != nil {
+		return "", err
+	}
+
+	caps, err := response.GetString("Caps")
+	if err != nil {
+		return "", err
+	}
+
+	return caps, nil
+}
+
+func (c *RigClient) Power2mW(power float64, frequency Frequency, mode string) (int, error) {
+	response, err := c.get("\\power2mW", fmt.Sprintf("%f", power), frequencyToHL(frequency), mode)
+	if err != nil {
+		return 0, err
+	}
+
+	mw, err := response.GetInt("Power mW")
+	if err != nil {
+		return 0, err
+	}
+
+	return mw, nil
+}
+
+func (c *RigClient) MW2Power(powerMW int, frequency Frequency, mode string) (float64, error) {
+	response, err := c.get("\\mW2power", fmt.Sprintf("%d", powerMW), frequencyToHL(frequency), mode)
+	if err != nil {
+		return 0, err
+	}
+
+	power, err := response.GetFloat64("Power [0.0..1.0]")
+	if err != nil {
+		return 0, err
+	}
+
+	return power, nil
+}
+
+func (c *RigClient) SetClock(dateTime string) error {
+	return c.set("\\set_clock", dateTime)
+}
+
+func (c *RigClient) GetClock() (string, error) {
+	response, err := c.get("\\get_clock")
+	if err != nil {
+		return "", err
+	}
+
+	clock, err := response.GetString("Clock")
+	if err != nil {
+		return "", err
+	}
+
+	return clock, nil
+}
+
+func (c *RigClient) CheckVFOMode() (bool, error) {
+	response, err := c.get("\\chk_vfo")
+	if err != nil {
+		return false, err
+	}
+
+	check, err := response.GetBool("ChkVFO")
+	if err != nil {
+		return false, err
+	}
+
+	return check, nil
+}
+
+func (c *RigClient) SetLockMode(locked bool) error {
+	return c.set("\\set_lock_mode", boolToHL(locked))
+}
+
+func (c *RigClient) GetLockMode() (bool, error) {
+	response, err := c.get("\\get_lock_mode")
+	if err != nil {
+		return false, err
+	}
+
+	locked, err := response.GetBool("Locked")
+	if err != nil {
+		return false, err
+	}
+
+	return locked, nil
+}
+
+func (c *RigClient) SendRaw(terminator string, command string) error {
+	return c.set("\\send_raw", terminator, command)
+}
+
+func (c *RigClient) ClientVersion(version string) error {
+	return c.set("\\client_version", version)
+}
+
+func (c *RigClient) HamlibVersion() (string, error) {
+	response, err := c.get("\\hamlib_version")
+	if err != nil {
+		return "", err
+	}
+
+	version, err := response.GetString("Version")
+	if err != nil {
+		return "", err
+	}
+
+	return version, nil
+}
+
+func (c *RigClient) Test() error {
+	return c.set("\\test")
+}
+
+func (c *RigClient) SetGPIO(gpio int, value int) error {
+	return c.set("\\set_gpio", fmt.Sprintf("%d", gpio), fmt.Sprintf("%d", value))
+}
+
+func (c *RigClient) GetGPIO(gpio int) (int, error) {
+	response, err := c.get("\\get_gpio", fmt.Sprintf("%d", gpio))
+	if err != nil {
+		return 0, err
+	}
+
+	value, err := response.GetInt("0/1")
+	if err != nil {
+		return 0, err
+	}
+
+	return value, nil
+}
