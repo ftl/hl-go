@@ -2,7 +2,10 @@ module github.com/ftl/hl-go
 
 go 1.24.3
 
-require github.com/stretchr/testify v1.11.1
+require (
+	github.com/ftl/hamradio v0.2.13
+	github.com/stretchr/testify v1.11.1
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
