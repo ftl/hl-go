@@ -80,6 +80,10 @@ func TestRigClient(t *testing.T) {
 		}
 		require.NoError(t, err)
 
+		vfoMode, err := client.CheckVFOMode()
+		assert.NoError(t, err)
+		assert.True(t, vfoMode)
+
 		err = client.SetFrequency(hl.VFOA, 10102000)
 		assert.NoError(t, err)
 

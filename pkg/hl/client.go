@@ -1,7 +1,9 @@
 package hl
 
 import (
+	"bufio"
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -711,7 +713,7 @@ func (c *RigClient) GetClock() (time.Time, error) {
 }
 
 func (c *RigClient) CheckVFOMode() (bool, error) {
-	response, err := c.get("\\chk_vfo")
+	response, err := c.getCustom(parseChkVFO, "\\chk_vfo")
 	if err != nil {
 		return false, err
 	}
@@ -722,6 +724,27 @@ func (c *RigClient) CheckVFOMode() (bool, error) {
 	}
 
 	return check, nil
+}
+
+func parseChkVFO(reader *bufio.Reader) (Response, error) {
+	response := Response{Data: make(map[string]string)}
+	line, err := reader.ReadString(commandDelimiter)
+	if err != nil {
+		return Response{}, fmt.Errorf("read response: %w", err)
+	}
+	line = strings.TrimRight(line, "\r\n")
+
+	sepAt := strings.Index(line, keyValueSeparator)
+	if sepAt > 0 {
+		key := line[:sepAt]
+		value := line[sepAt+len(keyValueSeparator):]
+		if key == "ChkVFO" {
+			response.Data[key] = value
+			return response, nil
+		}
+	}
+
+	return Response{}, fmt.Errorf("invalid chk_vfo reply: %q", line)
 }
 
 func (c *RigClient) SetLockMode(locked bool) error {
