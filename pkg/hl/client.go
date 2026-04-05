@@ -1,6 +1,11 @@
 package hl
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
+
+const timeFormat = "2006-01-02T15:04:05.999Z07:00"
 
 type RigClient struct {
 	conn *Conn
@@ -35,6 +40,14 @@ func (c *RigClient) get(command string, args ...string) (Response, error) {
 		Args:    args,
 	}
 	return c.conn.Execute(request)
+}
+
+func (c *RigClient) getCustom(parseResponse ResponseParser, command string, args ...string) (Response, error) {
+	request := Request{
+		Command: command,
+		Args:    args,
+	}
+	return c.conn.ExecuteCustom(request, parseResponse)
 }
 
 func (c *RigClient) set(command string, args ...string) error {
@@ -261,12 +274,12 @@ func (c *RigClient) SetAntenna(vfo VFO, antenna int, option int) error {
 }
 
 func (c *RigClient) GetFunc(vfo VFO, funcName string) (int, error) {
-	response, err := c.get("\\get_func", string(vfo), funcName)
+	response, err := c.getCustom(parseSingleValue, "\\get_func", string(vfo), funcName)
 	if err != nil {
 		return 0, err
 	}
 
-	status, err := response.GetInt("Func Status")
+	status, err := response.GetInt(singleValueKey)
 	if err != nil {
 		return 0, err
 	}
@@ -279,12 +292,12 @@ func (c *RigClient) SetFunc(vfo VFO, funcName string, status int) error {
 }
 
 func (c *RigClient) GetLevel(vfo VFO, levelName string) (float64, error) {
-	response, err := c.get("\\get_level", string(vfo), levelName)
+	response, err := c.getCustom(parseSingleValue, "\\get_level", string(vfo), levelName)
 	if err != nil {
 		return 0, err
 	}
 
-	value, err := response.GetFloat64("Level Value")
+	value, err := response.GetFloat64(singleValueKey)
 	if err != nil {
 		return 0, err
 	}
@@ -297,12 +310,12 @@ func (c *RigClient) SetLevel(vfo VFO, levelName string, value float64) error {
 }
 
 func (c *RigClient) GetParm(parmName string) (string, error) {
-	response, err := c.get("\\get_parm", parmName)
+	response, err := c.getCustom(parseSingleValue, "\\get_parm", parmName)
 	if err != nil {
 		return "", err
 	}
 
-	value, err := response.GetString("Parm Value")
+	value, err := response.GetString(singleValueKey)
 	if err != nil {
 		return "", err
 	}
@@ -491,12 +504,12 @@ func (c *RigClient) SendDTMF(digits string) error {
 }
 
 func (c *RigClient) ReceiveDTMF() (string, error) {
-	response, err := c.get("\\recv_dtmf")
+	response, err := c.getCustom(parseSingleValue, "\\recv_dtmf")
 	if err != nil {
 		return "", err
 	}
 
-	dtmf, err := response.GetString("Digits")
+	dtmf, err := response.GetString(singleValueKey)
 	if err != nil {
 		return "", err
 	}
@@ -559,12 +572,12 @@ func (c *RigClient) GetInfo() (string, error) {
 }
 
 func (c *RigClient) GetRigInfo() (string, error) {
-	response, err := c.get("\\get_rig_info")
+	response, err := c.getCustom(parseSingleValue, "\\get_rig_info")
 	if err != nil {
 		return "", err
 	}
 
-	info, err := response.GetString("Info")
+	info, err := response.GetString(singleValueKey)
 	if err != nil {
 		return "", err
 	}
@@ -607,12 +620,12 @@ func (c *RigClient) GetVFOInfo(vfo VFO) (Frequency, string, int, int, int, error
 }
 
 func (c *RigClient) DumpState() (string, error) {
-	response, err := c.get("\\dump_state")
+	response, err := c.getCustom(parseSingleValue, "\\dump_state")
 	if err != nil {
 		return "", err
 	}
 
-	state, err := response.GetString("State")
+	state, err := response.GetString(singleValueKey)
 	if err != nil {
 		return "", err
 	}
@@ -621,17 +634,31 @@ func (c *RigClient) DumpState() (string, error) {
 }
 
 func (c *RigClient) DumpCaps() (string, error) {
-	response, err := c.get("\\dump_caps")
+	response, err := c.getCustom(parseSingleValue, "\\dump_caps")
 	if err != nil {
 		return "", err
 	}
 
-	caps, err := response.GetString("Caps")
+	caps, err := response.GetString(singleValueKey)
 	if err != nil {
 		return "", err
 	}
 
 	return caps, nil
+}
+
+func (c *RigClient) DumpConf() (string, error) {
+	response, err := c.getCustom(parseSingleValue, "\\dump_conf")
+	if err != nil {
+		return "", err
+	}
+
+	conf, err := response.GetString(singleValueKey)
+	if err != nil {
+		return "", err
+	}
+
+	return conf, nil
 }
 
 func (c *RigClient) Power2mW(power float64, frequency Frequency, mode string) (int, error) {
@@ -662,22 +689,25 @@ func (c *RigClient) MW2Power(powerMW int, frequency Frequency, mode string) (flo
 	return power, nil
 }
 
-func (c *RigClient) SetClock(dateTime string) error {
-	return c.set("\\set_clock", dateTime)
+func (c *RigClient) SetClock(timestamp time.Time) error {
+	return c.set("\\set_clock", timestamp.Format(timeFormat))
 }
 
-func (c *RigClient) GetClock() (string, error) {
-	response, err := c.get("\\get_clock")
+func (c *RigClient) GetClock() (time.Time, error) {
+	response, err := c.getCustom(parseSingleValue, "\\get_clock")
 	if err != nil {
-		return "", err
+		return time.Time{}, err
 	}
 
-	clock, err := response.GetString("Clock")
+	timestamp, err := response.GetString(singleValueKey)
 	if err != nil {
-		return "", err
+		return time.Time{}, err
+	}
+	if timestamp == "0000-00-00T00:00:00.000+00:00" {
+		return time.Time{}, nil
 	}
 
-	return clock, nil
+	return time.Parse(timeFormat, timestamp)
 }
 
 func (c *RigClient) CheckVFOMode() (bool, error) {
@@ -712,8 +742,18 @@ func (c *RigClient) GetLockMode() (bool, error) {
 	return locked, nil
 }
 
-func (c *RigClient) SendRaw(terminator string, command string) error {
-	return c.set("\\send_raw", terminator, command)
+func (c *RigClient) SendRaw(terminator string, rawCommand []byte) (string, error) {
+	response, err := c.get("\\send_raw", terminator, fmt.Sprintf("%02x", rawCommand))
+	if err != nil {
+		return "", err
+	}
+
+	answer, err := response.GetString("Send raw answer")
+	if err != nil {
+		return "", err
+	}
+
+	return answer, nil
 }
 
 func (c *RigClient) ClientVersion(version string) error {
@@ -721,12 +761,12 @@ func (c *RigClient) ClientVersion(version string) error {
 }
 
 func (c *RigClient) HamlibVersion() (string, error) {
-	response, err := c.get("\\hamlib_version")
+	response, err := c.getCustom(parseSingleValue, "\\hamlib_version")
 	if err != nil {
 		return "", err
 	}
 
-	version, err := response.GetString("Version")
+	version, err := response.GetString(singleValueKey)
 	if err != nil {
 		return "", err
 	}

@@ -87,6 +87,14 @@ func TestRigClient(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, hl.Frequency(10102000), frequency)
 
+		timestamp, err := client.GetClock()
+		assert.NoError(t, err)
+		assert.True(t, timestamp.IsZero())
+
+		answer, err := client.SendRaw("1", []byte{3})
+		assert.NoError(t, err)
+		assert.Equal(t, "03", answer)
+
 		err = client.Close()
 		assert.NoError(t, err)
 	})

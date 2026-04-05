@@ -14,12 +14,16 @@ const (
 	dialTimeout     = 5 * time.Second
 	responseTimeout = 5 * time.Second
 
-	commandPrefix     = '+'
-	commandDelimiter  = '\n'
-	commandEnding     = '\n'
-	reportPrefix      = "RPRT "
-	keyValueSeparator = ": "
+	commandPrefix            = '+'
+	commandDelimiter         = '\n'
+	commandEnding            = '\n'
+	reportPrefix             = "RPRT "
+	keyValueSeparator        = ": "
+	singleValueKey           = "Value"
+	singleValueLineDelimiter = "\n"
 )
+
+type ResponseParser func(*bufio.Reader) (Response, error)
 
 type Conn struct {
 	conn        net.Conn
@@ -44,6 +48,10 @@ func (c *Conn) Close() error {
 }
 
 func (c *Conn) Execute(request Request) (Response, error) {
+	return c.ExecuteCustom(request, parseRegularResponse)
+}
+
+func (c *Conn) ExecuteCustom(request Request, parseResponse ResponseParser) (Response, error) {
 	c.executeLock.Lock()
 	defer c.executeLock.Unlock()
 
@@ -63,7 +71,7 @@ func (c *Conn) Execute(request Request) (Response, error) {
 	return response, err
 }
 
-func parseResponse(reader *bufio.Reader) (Response, error) {
+func parseRegularResponse(reader *bufio.Reader) (Response, error) {
 	response := Response{Data: make(map[string]string)}
 	firstLine := true
 	for {
@@ -95,5 +103,42 @@ func parseResponse(reader *bufio.Reader) (Response, error) {
 			value := line[sepAt+len(keyValueSeparator):]
 			response.Data[key] = value
 		}
+	}
+}
+
+func parseSingleValue(reader *bufio.Reader) (Response, error) {
+	response := Response{Data: make(map[string]string)}
+	firstLine := true
+	value := ""
+	for {
+		line, err := reader.ReadString(commandDelimiter)
+		if err != nil {
+			return Response{}, fmt.Errorf("read response: %w", err)
+		}
+		line = strings.TrimRight(line, "\r\n")
+
+		codeStr, isReportLine := strings.CutPrefix(line, reportPrefix)
+		if isReportLine {
+			code, err := strconv.Atoi(codeStr)
+			if err != nil {
+				return Response{}, fmt.Errorf("parse report: %w", err)
+			}
+			response.ReturnCode = ReturnCode(code)
+			if len(value) > 0 {
+				response.Data[singleValueKey] = value
+			}
+			return response, nil
+		}
+
+		if firstLine {
+			response.CommandEcho = line
+			firstLine = false
+			continue
+		}
+
+		if len(value) > 0 {
+			value += singleValueLineDelimiter
+		}
+		value += line
 	}
 }
