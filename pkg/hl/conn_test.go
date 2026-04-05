@@ -77,6 +77,16 @@ func TestParseResponses(t *testing.T) {
 			},
 		},
 		{
+			name:  "single value multiple lines with crippled report line",
+			parse: parseSingleValue,
+			input: "get_mode_bandwidths: currVFO:CW\nMode=CW\nNormal=500Hz\nNarrow=50Hz\nWide=2400HzRPRT 0\n",
+			expected: Response{
+				CommandEcho: "get_mode_bandwidths: currVFO:CW",
+				Data:        map[string]string{"Value": "Mode=CW\nNormal=500Hz\nNarrow=50Hz\nWide=2400Hz"},
+				ReturnCode:  RigOk,
+			},
+		},
+		{
 			name:  "invalid regular response",
 			parse: parseRegularResponse,
 			input: "invalid:\nRPRT -1\n",

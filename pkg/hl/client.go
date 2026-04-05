@@ -3,6 +3,7 @@ package hl
 import (
 	"bufio"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -969,18 +970,112 @@ func (c *RigClient) GetVFOList() (string, error) {
 	return vfos, nil
 }
 
-func (c *RigClient) GetModes() (string, error) {
-	response, err := c.get("\\get_modes")
+func (c *RigClient) GetModes() (map[Mode]ModeBandwidths, error) {
+	response, err := c.getCustom(parseSingleValue, "\\get_modes")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	modes, err := response.GetString("Modes")
+	modes, err := response.GetString(singleValueKey)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return modes, nil
+	return parseModes(modes)
+}
+
+func parseModes(s string) (map[Mode]ModeBandwidths, error) {
+	result := make(map[Mode]ModeBandwidths)
+	lines := strings.Split(s, singleValueLineDelimiter)
+	if len(lines) == 0 {
+		return nil, fmt.Errorf("empty input")
+	}
+
+	i := 1
+	for i < len(lines) {
+		if strings.TrimSpace(lines[i]) == "Bandwidths:" {
+			i++
+			break
+		}
+		i++
+	}
+
+	for ; i < len(lines); i++ {
+		line := strings.TrimSpace(lines[i])
+		if line == "" {
+			continue
+		}
+
+		parts := strings.Split(line, "\t")
+		if len(parts) != 4 {
+			return nil, fmt.Errorf("invalid mode bandwidth line: %q", line)
+		}
+
+		mode := Mode(strings.ToUpper(parts[0]))
+
+		normal, err := extractBandwidthFromPart(parts[1], "Normal: ")
+		if err != nil {
+			return nil, err
+		}
+		narrow, err := extractBandwidthFromPart(parts[2], "Narrow: ")
+		if err != nil {
+			return nil, err
+		}
+		wide, err := extractBandwidthFromPart(parts[3], "Wide: ")
+		if err != nil {
+			return nil, err
+		}
+
+		result[mode] = ModeBandwidths{
+			Normal: normal,
+			Narrow: narrow,
+			Wide:   wide,
+		}
+	}
+
+	return result, nil
+}
+
+func extractBandwidthFromPart(part string, prefix string) (Frequency, error) {
+	remainder, ok := strings.CutPrefix(part, prefix)
+	if !ok {
+		return 0, fmt.Errorf("invalid bandwidth prefix: expected %q but got %q", prefix, part)
+	}
+
+	valueString, _ := strings.CutSuffix(remainder, ",")
+
+	return parseBandwidth(valueString)
+}
+
+func parseBandwidth(s string) (Frequency, error) {
+	s = strings.TrimSpace(strings.ToLower(s))
+
+	var valueString string
+	var mhz, khz, hz bool
+	valueString, mhz = strings.CutSuffix(s, "mhz")
+	if !mhz {
+		valueString, khz = strings.CutSuffix(s, "khz")
+	}
+	if !mhz && !khz {
+		valueString, hz = strings.CutSuffix(s, "hz")
+	}
+
+	valueString = strings.TrimSpace(valueString)
+	value, err := strconv.ParseFloat(valueString, 64)
+	if err != nil {
+		return 0, fmt.Errorf("invalid bandwidth number: %w", err)
+	}
+
+	switch {
+	case hz:
+		return Frequency(value), nil
+	case khz:
+		return Frequency(value * 1_000), nil
+	case mhz:
+		return Frequency(value * 1_000_000), nil
+	default:
+		return 0, fmt.Errorf("unknown bandwidth unit: %q", s)
+	}
 }
 
 func (c *RigClient) Halt() error {
@@ -1013,18 +1108,49 @@ func (c *RigClient) GetSeparator() (string, error) {
 	return sep, nil
 }
 
-func (c *RigClient) GetModeBandwidths(mode string) (string, error) {
+func (c *RigClient) GetModeBandwidths(mode string) (ModeBandwidths, error) {
 	response, err := c.getCustom(parseSingleValue, "\\get_mode_bandwidths", mode)
 	if err != nil {
-		return "", err
+		return ModeBandwidths{}, err
 	}
 
 	bw, err := response.GetString(singleValueKey)
 	if err != nil {
-		return "", err
+		return ModeBandwidths{}, err
 	}
 
-	return bw, nil
+	return parseModeBandwidths(bw)
+}
+
+func parseModeBandwidths(s string) (ModeBandwidths, error) {
+	lines := strings.Split(s, singleValueLineDelimiter)
+	if len(lines) != 4 {
+		return ModeBandwidths{}, fmt.Errorf("empty input")
+	}
+
+	mode, ok := strings.CutPrefix(lines[0], "Mode=")
+	if !ok {
+		return ModeBandwidths{}, fmt.Errorf("invalid mode bandwidths: %q", s)
+	}
+	normal, err := extractBandwidthFromPart(lines[1], "Normal=")
+	if err != nil {
+		return ModeBandwidths{}, err
+	}
+	narrow, err := extractBandwidthFromPart(lines[2], "Narrow=")
+	if err != nil {
+		return ModeBandwidths{}, err
+	}
+	wide, err := extractBandwidthFromPart(lines[3], "Wide=")
+	if err != nil {
+		return ModeBandwidths{}, err
+	}
+
+	return ModeBandwidths{
+		Mode:   Mode(mode),
+		Normal: normal,
+		Narrow: narrow,
+		Wide:   wide,
+	}, nil
 }
 
 func (c *RigClient) SetConf(token string, value string) error {
@@ -1037,10 +1163,15 @@ func (c *RigClient) GetConf(token string) (string, error) {
 		return "", err
 	}
 
-	value, err := response.GetString(singleValueKey)
+	keyValue, err := response.GetString(singleValueKey)
 	if err != nil {
 		return "", err
 	}
 
-	return value, nil
+	_, after, found := strings.Cut(keyValue, "=")
+	if found {
+		return after, nil
+	}
+
+	return keyValue, nil
 }

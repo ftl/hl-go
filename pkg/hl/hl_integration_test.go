@@ -95,9 +95,21 @@ func TestRigClient(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, timestamp.IsZero())
 
-		answer, err := client.SendRaw("1", []byte{3})
+		reply, err := client.SendRaw("1", []byte{3})
 		assert.NoError(t, err)
-		assert.Equal(t, "03", answer)
+		assert.Equal(t, "03", reply)
+
+		bandwidths, err := client.GetModeBandwidths("CW")
+		assert.NoError(t, err)
+		assert.Equal(t, hl.ModeBandwidths{Mode: hl.ModeCW, Normal: 500, Narrow: 50, Wide: 2_400}, bandwidths)
+
+		modes, err := client.GetModes()
+		assert.NoError(t, err)
+		assert.Equal(t, []hl.Mode{hl.ModeAM, hl.ModeCW, hl.ModeCWR, hl.ModeFM, hl.ModeLSB, hl.ModeRTTY, hl.ModeRTTYR, hl.ModeUSB, hl.ModeWFM}, hl.Modes(modes))
+
+		clientConf, err := client.GetConf("client")
+		assert.NoError(t, err)
+		assert.Equal(t, "UNKNOWN", clientConf)
 
 		err = client.Close()
 		assert.NoError(t, err)

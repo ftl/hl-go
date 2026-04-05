@@ -117,13 +117,13 @@ func parseSingleValue(reader *bufio.Reader) (Response, error) {
 		}
 		line = strings.TrimRight(line, "\r\n")
 
-		codeStr, isReportLine := strings.CutPrefix(line, reportPrefix)
+		returnCodeStr, isReportLine := strings.CutPrefix(line, reportPrefix)
 		if isReportLine {
-			code, err := strconv.Atoi(codeStr)
+			returnCode, err := strconv.Atoi(returnCodeStr)
 			if err != nil {
 				return Response{}, fmt.Errorf("parse report: %w", err)
 			}
-			response.ReturnCode = ReturnCode(code)
+			response.ReturnCode = ReturnCode(returnCode)
 			if len(value) > 0 {
 				response.Data[singleValueKey] = value
 			}
@@ -136,9 +136,38 @@ func parseSingleValue(reader *bufio.Reader) (Response, error) {
 			continue
 		}
 
+		line, returnCode, isCrippled := checkCrippledReportLine(line)
+
 		if len(value) > 0 {
 			value += singleValueLineDelimiter
 		}
 		value += line
+
+		if isCrippled {
+			response.ReturnCode = returnCode
+			if len(value) > 0 {
+				response.Data[singleValueKey] = value
+			}
+			return response, nil
+		}
 	}
+}
+
+func checkCrippledReportLine(line string) (string, ReturnCode, bool) {
+	idx := strings.LastIndex(line, "RPRT ")
+	if idx == -1 {
+		return line, 0, false
+	}
+
+	suffix := strings.TrimSpace(line[idx+len("RPRT"):])
+	returnCode, err := strconv.Atoi(suffix)
+	if err != nil {
+		return line, 0, false
+	}
+
+	if returnCode > 0 {
+		return line, 0, false
+	}
+
+	return line[:idx], ReturnCode(returnCode), true
 }

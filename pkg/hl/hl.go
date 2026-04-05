@@ -2,6 +2,7 @@ package hl
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 
 	"github.com/ftl/hamradio"
@@ -108,3 +109,44 @@ const (
 )
 
 type Frequency = hamradio.Frequency
+
+type Mode string
+
+const (
+	ModeUSB     Mode = "USB"
+	ModeLSB     Mode = "LSB"
+	ModeCW      Mode = "CW"
+	ModeCWR     Mode = "CWR"
+	ModeRTTY    Mode = "RTTY"
+	ModeRTTYR   Mode = "RTTYR"
+	ModeAM      Mode = "AM"
+	ModeFM      Mode = "FM"
+	ModeWFM     Mode = "WFM"
+	ModeAMS     Mode = "AMS"
+	ModePKTLSB  Mode = "PKTLSB"
+	ModePKTUSB  Mode = "PKTUSB"
+	ModePKTFM   Mode = "PKTFM"
+	ModeECSSUSB Mode = "ECSSUSB"
+	ModeECSSLSB Mode = "ECSSLSB"
+	ModeFA      Mode = "FA"
+	ModeSAM     Mode = "SAM"
+	ModeSAL     Mode = "SAL"
+	ModeSAH     Mode = "SAH"
+	ModeDSB     Mode = "DSB"
+)
+
+type ModeBandwidths struct {
+	Mode   Mode
+	Normal Frequency
+	Narrow Frequency
+	Wide   Frequency
+}
+
+func Modes(m map[Mode]ModeBandwidths) []Mode {
+	result := make([]Mode, 0, len(m))
+	for mode := range m {
+		result = append(result, mode)
+	}
+	slices.Sort(result)
+	return result
+}
