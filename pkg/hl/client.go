@@ -242,6 +242,34 @@ func (c *RigClient) SetSplitMode(vfo VFO, txMode string, txPassband int) error {
 	return c.set("\\set_split_mode", string(vfo), txMode, fmt.Sprintf("%d", txPassband))
 }
 
+func (c *RigClient) GetSplitFreqMode(vfo VFO) (Frequency, string, int, error) {
+	response, err := c.get("\\get_split_freq_mode", string(vfo))
+	if err != nil {
+		return 0, "", 0, err
+	}
+
+	freq, err := response.GetFloat64("TX Frequency")
+	if err != nil {
+		return 0, "", 0, err
+	}
+
+	mode, err := response.GetString("TX Mode")
+	if err != nil {
+		return 0, "", 0, err
+	}
+
+	passband, err := response.GetInt("TX Passband")
+	if err != nil {
+		return 0, "", 0, err
+	}
+
+	return Frequency(freq), mode, passband, nil
+}
+
+func (c *RigClient) SetSplitFreqMode(vfo VFO, txFrequency Frequency, txMode string, txPassband int) error {
+	return c.set("\\set_split_freq_mode", string(vfo), frequencyToHL(txFrequency), txMode, fmt.Sprintf("%d", txPassband))
+}
+
 func (c *RigClient) GetAntenna(vfo VFO, antCurr int) (int, int, int, int, error) {
 	response, err := c.get("\\get_ant", string(vfo), fmt.Sprintf("%d", antCurr))
 	if err != nil {
@@ -814,6 +842,204 @@ func (c *RigClient) GetGPIO(gpio int) (int, error) {
 	value, err := response.GetInt("0/1")
 	if err != nil {
 		return 0, err
+	}
+
+	return value, nil
+}
+
+func (c *RigClient) SetTransceive(transceive int) error {
+	return c.set("\\set_trn", fmt.Sprintf("%d", transceive))
+}
+
+func (c *RigClient) GetTransceive() (int, error) {
+	response, err := c.get("\\get_trn")
+	if err != nil {
+		return 0, err
+	}
+
+	trn, err := response.GetInt("Transceive")
+	if err != nil {
+		return 0, err
+	}
+
+	return trn, nil
+}
+
+func (c *RigClient) SetChannel(channel string) error {
+	return c.set("\\set_channel", channel)
+}
+
+func (c *RigClient) GetChannel(channel string, readOnly int) (string, error) {
+	response, err := c.getCustom(parseSingleValue, "\\get_channel", channel, fmt.Sprintf("%d", readOnly))
+	if err != nil {
+		return "", err
+	}
+
+	value, err := response.GetString(singleValueKey)
+	if err != nil {
+		return "", err
+	}
+
+	return value, nil
+}
+
+func (c *RigClient) SendCmd(command string) (string, error) {
+	response, err := c.get("\\send_cmd", command)
+	if err != nil {
+		return "", err
+	}
+
+	reply, err := response.GetString("Reply")
+	if err != nil {
+		return "", err
+	}
+
+	return reply, nil
+}
+
+func (c *RigClient) SendCmdRx(command string, reply int) (string, error) {
+	response, err := c.get("\\send_cmd_rx", command, fmt.Sprintf("%d", reply))
+	if err != nil {
+		return "", err
+	}
+
+	value, err := response.GetString("Reply")
+	if err != nil {
+		return "", err
+	}
+
+	return value, nil
+}
+
+func (c *RigClient) StopVoiceMemory() error {
+	return c.set("\\stop_voice_mem")
+}
+
+func (c *RigClient) SetUplink(uplink int) error {
+	return c.set("\\uplink", fmt.Sprintf("%d", uplink))
+}
+
+func (c *RigClient) SetTwiddle(timeoutSecs int) error {
+	return c.set("\\set_twiddle", fmt.Sprintf("%d", timeoutSecs))
+}
+
+func (c *RigClient) GetTwiddle() (int, error) {
+	response, err := c.get("\\get_twiddle")
+	if err != nil {
+		return 0, err
+	}
+
+	timeout, err := response.GetInt("Timeout (secs)")
+	if err != nil {
+		return 0, err
+	}
+
+	return timeout, nil
+}
+
+func (c *RigClient) SetCache(timeoutMsecs int) error {
+	return c.set("\\set_cache", fmt.Sprintf("%d", timeoutMsecs))
+}
+
+func (c *RigClient) GetCache() (int, error) {
+	response, err := c.get("\\get_cache")
+	if err != nil {
+		return 0, err
+	}
+
+	timeout, err := response.GetInt("Timeout (msecs)")
+	if err != nil {
+		return 0, err
+	}
+
+	return timeout, nil
+}
+
+func (c *RigClient) GetVFOList() (string, error) {
+	response, err := c.get("\\get_vfo_list")
+	if err != nil {
+		return "", err
+	}
+
+	vfos, err := response.GetString("VFOs")
+	if err != nil {
+		return "", err
+	}
+
+	return vfos, nil
+}
+
+func (c *RigClient) GetModes() (string, error) {
+	response, err := c.get("\\get_modes")
+	if err != nil {
+		return "", err
+	}
+
+	modes, err := response.GetString("Modes")
+	if err != nil {
+		return "", err
+	}
+
+	return modes, nil
+}
+
+func (c *RigClient) Halt() error {
+	return c.set("\\halt")
+}
+
+func (c *RigClient) Pause(seconds int) error {
+	return c.set("\\pause", fmt.Sprintf("%d", seconds))
+}
+
+func (c *RigClient) Password(password string) error {
+	return c.set("\\password", password)
+}
+
+func (c *RigClient) SetSeparator(separator string) error {
+	return c.set("\\set_separator", separator)
+}
+
+func (c *RigClient) GetSeparator() (string, error) {
+	response, err := c.get("\\get_separator")
+	if err != nil {
+		return "", err
+	}
+
+	sep, err := response.GetString("Separator")
+	if err != nil {
+		return "", err
+	}
+
+	return sep, nil
+}
+
+func (c *RigClient) GetModeBandwidths(mode string) (string, error) {
+	response, err := c.getCustom(parseSingleValue, "\\get_mode_bandwidths", mode)
+	if err != nil {
+		return "", err
+	}
+
+	bw, err := response.GetString(singleValueKey)
+	if err != nil {
+		return "", err
+	}
+
+	return bw, nil
+}
+
+func (c *RigClient) SetConf(token string, value string) error {
+	return c.set("\\set_conf", token, value)
+}
+
+func (c *RigClient) GetConf(token string) (string, error) {
+	response, err := c.getCustom(parseSingleValue, "\\get_conf", token)
+	if err != nil {
+		return "", err
+	}
+
+	value, err := response.GetString(singleValueKey)
+	if err != nil {
+		return "", err
 	}
 
 	return value, nil
