@@ -869,8 +869,8 @@ func (c *RigClient) SetChannel(channel string) error {
 	return c.set("\\set_channel", channel)
 }
 
-func (c *RigClient) GetChannel(channel string, readOnly int) (string, error) {
-	response, err := c.getCustom(parseSingleValue, "\\get_channel", channel, fmt.Sprintf("%d", readOnly))
+func (c *RigClient) GetChannel(channel string, readOnly bool) (string, error) {
+	response, err := c.getCustom(parseSingleValue, "\\get_channel", channel, boolToHL(readOnly))
 	if err != nil {
 		return "", err
 	}
