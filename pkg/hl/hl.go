@@ -122,6 +122,8 @@ const (
 
 type Frequency = hamradio.Frequency
 
+type Bandwidth = Frequency
+
 type Mode string
 
 const (
@@ -149,9 +151,9 @@ const (
 
 type ModeBandwidths struct {
 	Mode   Mode
-	Normal Frequency
-	Narrow Frequency
-	Wide   Frequency
+	Normal Bandwidth
+	Narrow Bandwidth
+	Wide   Bandwidth
 }
 
 func Modes(m map[Mode]ModeBandwidths) []Mode {
@@ -291,4 +293,49 @@ const (
 	KeylightParm       Parameter = "KEYLIGHT"
 	ScreensaverParm    Parameter = "SCREENSAVER"
 	TimeParm           Parameter = "TIME"
+)
+
+type PTTStatus int
+
+const (
+	PTTOff PTTStatus = iota
+	PTTOn
+	PTTOnMic
+	PTTOnData
+)
+
+type PowerStatus int
+
+const (
+	PowerOn PowerStatus = 1 << iota
+	PowerStandby
+	PowerOperate
+	PowerUnknown
+	PowerOff PowerStatus = 0
+)
+
+type ResetMode int
+
+const (
+	ResetSoft ResetMode = 1 << iota
+	ResetVFO
+	ResetMCall
+	ResetMaster
+	ResetNone ResetMode = 0
+)
+
+type TransceiveMode int
+
+const (
+	TransceiveOff TransceiveMode = iota
+	TransceiveRig
+	TransceivePoll
+)
+
+type Uplink int
+
+const (
+	UplinkNone = iota
+	UplinkSub
+	UplinkMain
 )

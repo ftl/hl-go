@@ -99,7 +99,7 @@ func (c *RigClient) SetFrequency(vfo VFO, frequency Frequency) error {
 	return c.set("\\set_freq", string(vfo), frequencyToHL(frequency))
 }
 
-func (c *RigClient) GetMode(vfo VFO) (string, int, error) {
+func (c *RigClient) GetMode(vfo VFO) (Mode, Bandwidth, error) {
 	response, err := c.get("\\get_mode", string(vfo))
 	if err != nil {
 		return "", 0, err
@@ -110,16 +110,16 @@ func (c *RigClient) GetMode(vfo VFO) (string, int, error) {
 		return "", 0, err
 	}
 
-	passband, err := response.GetInt("Passband")
+	passband, err := response.GetFloat64("Passband")
 	if err != nil {
 		return "", 0, err
 	}
 
-	return mode, passband, nil
+	return Mode(mode), Bandwidth(passband), nil
 }
 
-func (c *RigClient) SetMode(vfo VFO, mode string, passband int) error {
-	return c.set("\\set_mode", string(vfo), mode, fmt.Sprintf("%d", passband))
+func (c *RigClient) SetMode(vfo VFO, mode Mode, passband Bandwidth) error {
+	return c.set("\\set_mode", string(vfo), string(mode), frequencyToHL(passband))
 }
 
 func (c *RigClient) GetVFO() (VFO, error) {
@@ -176,7 +176,7 @@ func (c *RigClient) SetXIT(vfo VFO, xit int) error {
 	return c.set("\\set_xit", string(vfo), fmt.Sprintf("%d", xit))
 }
 
-func (c *RigClient) GetPTT(vfo VFO) (int, error) {
+func (c *RigClient) GetPTT(vfo VFO) (PTTStatus, error) {
 	response, err := c.get("\\get_ptt", string(vfo))
 	if err != nil {
 		return 0, err
@@ -187,34 +187,34 @@ func (c *RigClient) GetPTT(vfo VFO) (int, error) {
 		return 0, err
 	}
 
-	return ptt, nil
+	return PTTStatus(ptt), nil
 }
 
-func (c *RigClient) SetPTT(vfo VFO, ptt int) error {
+func (c *RigClient) SetPTT(vfo VFO, ptt PTTStatus) error {
 	return c.set("\\set_ptt", string(vfo), fmt.Sprintf("%d", ptt))
 }
 
-func (c *RigClient) GetSplitVFO(vfo VFO) (int, VFO, error) {
+func (c *RigClient) GetSplitVFO(vfo VFO) (bool, VFO, error) {
 	response, err := c.get("\\get_split_vfo", string(vfo))
 	if err != nil {
-		return 0, "", err
+		return false, "", err
 	}
 
-	split, err := response.GetInt("Split")
+	split, err := response.GetBool("Split")
 	if err != nil {
-		return 0, "", err
+		return false, "", err
 	}
 
 	txVFO, err := response.GetString("TX VFO")
 	if err != nil {
-		return 0, "", err
+		return false, "", err
 	}
 
 	return split, VFO(txVFO), nil
 }
 
-func (c *RigClient) SetSplitVFO(vfo VFO, split int, txVFO VFO) error {
-	return c.set("\\set_split_vfo", string(vfo), fmt.Sprintf("%d", split), string(txVFO))
+func (c *RigClient) SetSplitVFO(vfo VFO, split bool, txVFO VFO) error {
+	return c.set("\\set_split_vfo", string(vfo), boolToHL(split), string(txVFO))
 }
 
 func (c *RigClient) GetSplitFrequency(vfo VFO) (Frequency, error) {
@@ -235,7 +235,7 @@ func (c *RigClient) SetSplitFrequency(vfo VFO, txFrequency Frequency) error {
 	return c.set("\\set_split_freq", string(vfo), frequencyToHL(txFrequency))
 }
 
-func (c *RigClient) GetSplitMode(vfo VFO) (string, int, error) {
+func (c *RigClient) GetSplitMode(vfo VFO) (Mode, Bandwidth, error) {
 	response, err := c.get("\\get_split_mode", string(vfo))
 	if err != nil {
 		return "", 0, err
@@ -246,19 +246,19 @@ func (c *RigClient) GetSplitMode(vfo VFO) (string, int, error) {
 		return "", 0, err
 	}
 
-	passband, err := response.GetInt("TX Passband")
+	passband, err := response.GetFloat64("TX Passband")
 	if err != nil {
 		return "", 0, err
 	}
 
-	return mode, passband, nil
+	return Mode(mode), Bandwidth(passband), nil
 }
 
-func (c *RigClient) SetSplitMode(vfo VFO, txMode string, txPassband int) error {
-	return c.set("\\set_split_mode", string(vfo), txMode, fmt.Sprintf("%d", txPassband))
+func (c *RigClient) SetSplitMode(vfo VFO, txMode Mode, txPassband Bandwidth) error {
+	return c.set("\\set_split_mode", string(vfo), string(txMode), frequencyToHL(txPassband))
 }
 
-func (c *RigClient) GetSplitFreqMode(vfo VFO) (Frequency, string, int, error) {
+func (c *RigClient) GetSplitFreqMode(vfo VFO) (Frequency, Mode, Bandwidth, error) {
 	response, err := c.get("\\get_split_freq_mode", string(vfo))
 	if err != nil {
 		return 0, "", 0, err
@@ -279,11 +279,11 @@ func (c *RigClient) GetSplitFreqMode(vfo VFO) (Frequency, string, int, error) {
 		return 0, "", 0, err
 	}
 
-	return Frequency(freq), mode, passband, nil
+	return Frequency(freq), Mode(mode), Bandwidth(passband), nil
 }
 
-func (c *RigClient) SetSplitFreqMode(vfo VFO, txFrequency Frequency, txMode string, txPassband int) error {
-	return c.set("\\set_split_freq_mode", string(vfo), frequencyToHL(txFrequency), txMode, fmt.Sprintf("%d", txPassband))
+func (c *RigClient) SetSplitFreqMode(vfo VFO, txFrequency Frequency, txMode Mode, txPassband Bandwidth) error {
+	return c.set("\\set_split_freq_mode", string(vfo), frequencyToHL(txFrequency), string(txMode), frequencyToHL(txPassband))
 }
 
 func (c *RigClient) GetAntenna(vfo VFO, antCurr int) (int, int, int, int, error) {
@@ -591,15 +591,15 @@ func (c *RigClient) ReceiveDTMF() (string, error) {
 	return c.getSingleValue("\\recv_dtmf")
 }
 
-func (c *RigClient) GetDCD() (int, error) {
+func (c *RigClient) GetDCD() (bool, error) {
 	response, err := c.get("\\get_dcd")
 	if err != nil {
-		return 0, err
+		return false, err
 	}
 
-	dcd, err := response.GetInt("DCD")
+	dcd, err := response.GetBool("DCD")
 	if err != nil {
-		return 0, err
+		return false, err
 	}
 
 	return dcd, nil
@@ -609,15 +609,15 @@ func (c *RigClient) SendVoiceMemory(msgnum int) error {
 	return c.set("\\send_voice_mem", fmt.Sprintf("%d", msgnum))
 }
 
-func (c *RigClient) Reset(reset int) error {
-	return c.set("\\reset", fmt.Sprintf("%d", reset))
+func (c *RigClient) Reset(mode ResetMode) error {
+	return c.set("\\reset", fmt.Sprintf("%d", mode))
 }
 
-func (c *RigClient) SetPowerStatus(status int) error {
+func (c *RigClient) SetPowerStatus(status PowerStatus) error {
 	return c.set("\\set_powerstat", fmt.Sprintf("%d", status))
 }
 
-func (c *RigClient) GetPowerStatus() (int, error) {
+func (c *RigClient) GetPowerStatus() (PowerStatus, error) {
 	response, err := c.get("\\get_powerstat")
 	if err != nil {
 		return 0, err
@@ -628,7 +628,7 @@ func (c *RigClient) GetPowerStatus() (int, error) {
 		return 0, err
 	}
 
-	return status, nil
+	return PowerStatus(status), nil
 }
 
 func (c *RigClient) GetInfo() (string, error) {
@@ -649,38 +649,38 @@ func (c *RigClient) GetRigInfo() (string, error) {
 	return c.getSingleValue("\\get_rig_info")
 }
 
-func (c *RigClient) GetVFOInfo(vfo VFO) (Frequency, string, int, int, int, error) {
+func (c *RigClient) GetVFOInfo(vfo VFO) (Frequency, Mode, Bandwidth, bool, bool, error) {
 	response, err := c.get("\\get_vfo_info", string(vfo))
 	if err != nil {
-		return 0, "", 0, 0, 0, err
+		return 0, "", 0, false, false, err
 	}
 
 	freq, err := response.GetFloat64("Freq")
 	if err != nil {
-		return 0, "", 0, 0, 0, err
+		return 0, "", 0, false, false, err
 	}
 
 	mode, err := response.GetString("Mode")
 	if err != nil {
-		return 0, "", 0, 0, 0, err
+		return 0, "", 0, false, false, err
 	}
 
-	width, err := response.GetInt("Width")
+	width, err := response.GetFloat64("Width")
 	if err != nil {
-		return 0, "", 0, 0, 0, err
+		return 0, "", 0, false, false, err
 	}
 
-	split, err := response.GetInt("Split")
+	split, err := response.GetBool("Split")
 	if err != nil {
-		return 0, "", 0, 0, 0, err
+		return 0, "", 0, false, false, err
 	}
 
-	satMode, err := response.GetInt("SatMode")
+	satMode, err := response.GetBool("SatMode")
 	if err != nil {
-		return 0, "", 0, 0, 0, err
+		return 0, "", 0, false, false, err
 	}
 
-	return Frequency(freq), mode, width, split, satMode, nil
+	return Frequency(freq), Mode(mode), Bandwidth(width), split, satMode, nil
 }
 
 func (c *RigClient) DumpState() (string, error) {
@@ -695,8 +695,8 @@ func (c *RigClient) DumpConf() (string, error) {
 	return c.getSingleValue("\\dump_conf")
 }
 
-func (c *RigClient) Power2mW(power float64, frequency Frequency, mode string) (int, error) {
-	response, err := c.get("\\power2mW", fmt.Sprintf("%f", power), frequencyToHL(frequency), mode)
+func (c *RigClient) Power2mW(power float64, frequency Frequency, mode Mode) (int, error) {
+	response, err := c.get("\\power2mW", fmt.Sprintf("%f", power), frequencyToHL(frequency), string(mode))
 	if err != nil {
 		return 0, err
 	}
@@ -709,8 +709,8 @@ func (c *RigClient) Power2mW(power float64, frequency Frequency, mode string) (i
 	return mw, nil
 }
 
-func (c *RigClient) MW2Power(powerMW int, frequency Frequency, mode string) (float64, error) {
-	response, err := c.get("\\mW2power", fmt.Sprintf("%d", powerMW), frequencyToHL(frequency), mode)
+func (c *RigClient) MW2Power(powerMW int, frequency Frequency, mode Mode) (float64, error) {
+	response, err := c.get("\\mW2power", fmt.Sprintf("%d", powerMW), frequencyToHL(frequency), string(mode))
 	if err != nil {
 		return 0, err
 	}
@@ -837,11 +837,11 @@ func (c *RigClient) GetGPIO(gpio int) (int, error) {
 	return value, nil
 }
 
-func (c *RigClient) SetTransceive(transceive int) error {
-	return c.set("\\set_trn", fmt.Sprintf("%d", transceive))
+func (c *RigClient) SetTransceive(mode TransceiveMode) error {
+	return c.set("\\set_trn", fmt.Sprintf("%d", mode))
 }
 
-func (c *RigClient) GetTransceive() (int, error) {
+func (c *RigClient) GetTransceive() (TransceiveMode, error) {
 	response, err := c.get("\\get_trn")
 	if err != nil {
 		return 0, err
@@ -852,7 +852,7 @@ func (c *RigClient) GetTransceive() (int, error) {
 		return 0, err
 	}
 
-	return trn, nil
+	return TransceiveMode(trn), nil
 }
 
 func (c *RigClient) SetChannel(channel string) error {
@@ -895,7 +895,7 @@ func (c *RigClient) StopVoiceMemory() error {
 	return c.set("\\stop_voice_mem")
 }
 
-func (c *RigClient) SetUplink(uplink int) error {
+func (c *RigClient) SetUplink(uplink Uplink) error {
 	return c.set("\\uplink", fmt.Sprintf("%d", uplink))
 }
 
@@ -1009,7 +1009,7 @@ func parseModes(s string) (map[Mode]ModeBandwidths, error) {
 	return result, nil
 }
 
-func extractBandwidthFromPart(part string, prefix string) (Frequency, error) {
+func extractBandwidthFromPart(part string, prefix string) (Bandwidth, error) {
 	remainder, ok := strings.CutPrefix(part, prefix)
 	if !ok {
 		return 0, fmt.Errorf("invalid bandwidth prefix: expected %q but got %q", prefix, part)
@@ -1020,7 +1020,7 @@ func extractBandwidthFromPart(part string, prefix string) (Frequency, error) {
 	return parseBandwidth(valueString)
 }
 
-func parseBandwidth(s string) (Frequency, error) {
+func parseBandwidth(s string) (Bandwidth, error) {
 	s = strings.TrimSpace(strings.ToLower(s))
 
 	var valueString string
@@ -1041,11 +1041,11 @@ func parseBandwidth(s string) (Frequency, error) {
 
 	switch {
 	case hz:
-		return Frequency(value), nil
+		return Bandwidth(value), nil
 	case khz:
-		return Frequency(value * 1_000), nil
+		return Bandwidth(value * 1_000), nil
 	case mhz:
-		return Frequency(value * 1_000_000), nil
+		return Bandwidth(value * 1_000_000), nil
 	default:
 		return 0, fmt.Errorf("unknown bandwidth unit: %q", s)
 	}
@@ -1081,8 +1081,8 @@ func (c *RigClient) GetSeparator() (string, error) {
 	return sep, nil
 }
 
-func (c *RigClient) GetModeBandwidths(mode string) (ModeBandwidths, error) {
-	bw, err := c.getSingleValue("\\get_mode_bandwidths", mode)
+func (c *RigClient) GetModeBandwidths(mode Mode) (ModeBandwidths, error) {
+	bw, err := c.getSingleValue("\\get_mode_bandwidths", string(mode))
 	if err != nil {
 		return ModeBandwidths{}, err
 	}
