@@ -9,9 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ftl/hl-go/pkg/hl"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/ftl/hl-go"
 )
 
 func TestConn(t *testing.T) {

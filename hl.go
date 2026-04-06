@@ -8,6 +8,8 @@ import (
 	"github.com/ftl/hamradio"
 )
 
+const timeFormat = "2006-01-02T15:04:05.999Z07:00"
+
 type Request struct {
 	Command string
 	Args    []string
