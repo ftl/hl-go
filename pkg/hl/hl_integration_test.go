@@ -111,6 +111,24 @@ func TestRigClient(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "UNKNOWN", clientConf)
 
+		functions, err := client.GetAvailableFunctions(hl.VFOA)
+		assert.NoError(t, err)
+		assert.Equal(t, 48, len(functions))
+		assert.Equal(t, hl.AutoBandModeFunction, functions[0])
+		assert.Equal(t, hl.XITFunction, functions[47])
+
+		levels, err := client.GetAvailableLevels(hl.VFOA)
+		assert.NoError(t, err)
+		assert.Equal(t, 54, len(levels))
+		assert.Equal(t, hl.AudioFrequencyLevel, levels[0])
+		assert.Equal(t, hl.VOXGainLevel, levels[53])
+
+		parameters, err := client.GetAvailableParameters()
+		assert.NoError(t, err)
+		assert.Equal(t, 14, len(parameters))
+		assert.Equal(t, hl.AFIFOutputParm, parameters[0])
+		assert.Equal(t, hl.TimeParm, parameters[13])
+
 		err = client.Close()
 		assert.NoError(t, err)
 	})

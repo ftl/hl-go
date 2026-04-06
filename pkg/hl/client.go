@@ -3,6 +3,7 @@ package hl
 import (
 	"bufio"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -304,26 +305,47 @@ func (c *RigClient) SetAntenna(vfo VFO, antenna int, option int) error {
 	return c.set("\\set_ant", string(vfo), fmt.Sprintf("%d", antenna), fmt.Sprintf("%d", option))
 }
 
-func (c *RigClient) GetFunc(vfo VFO, funcName string) (int, error) {
-	response, err := c.getCustom(parseSingleValue, "\\get_func", string(vfo), funcName)
+func (c *RigClient) GetFunc(vfo VFO, function Function) (bool, error) {
+	response, err := c.getCustom(parseSingleValue, "\\get_func", string(vfo), string(function))
 	if err != nil {
-		return 0, err
+		return false, err
 	}
 
-	status, err := response.GetInt(singleValueKey)
+	status, err := response.GetBool(singleValueKey)
 	if err != nil {
-		return 0, err
+		return false, err
 	}
 
 	return status, nil
 }
 
-func (c *RigClient) SetFunc(vfo VFO, funcName string, status int) error {
-	return c.set("\\set_func", string(vfo), funcName, fmt.Sprintf("%d", status))
+func (c *RigClient) GetAvailableFunctions(vfo VFO) ([]Function, error) {
+	response, err := c.getCustom(parseSingleValue, "\\get_func", string(vfo), "?")
+	if err != nil {
+		return nil, err
+	}
+
+	functionsString, err := response.GetString(singleValueKey)
+	if err != nil {
+		return nil, err
+	}
+
+	parts := strings.Split(strings.TrimSpace(functionsString), " ")
+	functions := make([]Function, len(parts))
+	for i := range parts {
+		functions[i] = Function(parts[i])
+	}
+	slices.Sort(functions)
+
+	return functions, nil
 }
 
-func (c *RigClient) GetLevel(vfo VFO, levelName string) (float64, error) {
-	response, err := c.getCustom(parseSingleValue, "\\get_level", string(vfo), levelName)
+func (c *RigClient) SetFunc(vfo VFO, function Function, status bool) error {
+	return c.set("\\set_func", string(vfo), string(function), boolToHL(status))
+}
+
+func (c *RigClient) GetLevel(vfo VFO, level Level) (float64, error) {
+	response, err := c.getCustom(parseSingleValue, "\\get_level", string(vfo), string(level))
 	if err != nil {
 		return 0, err
 	}
@@ -336,12 +358,33 @@ func (c *RigClient) GetLevel(vfo VFO, levelName string) (float64, error) {
 	return value, nil
 }
 
-func (c *RigClient) SetLevel(vfo VFO, levelName string, value float64) error {
-	return c.set("\\set_level", string(vfo), levelName, fmt.Sprintf("%f", value))
+func (c *RigClient) GetAvailableLevels(vfo VFO) ([]Level, error) {
+	response, err := c.getCustom(parseSingleValue, "\\get_level", string(vfo), "?")
+	if err != nil {
+		return nil, err
+	}
+
+	levelsString, err := response.GetString(singleValueKey)
+	if err != nil {
+		return nil, err
+	}
+
+	parts := strings.Split(strings.TrimSpace(levelsString), " ")
+	levels := make([]Level, len(parts))
+	for i := range parts {
+		levels[i] = Level(parts[i])
+	}
+	slices.Sort(levels)
+
+	return levels, nil
 }
 
-func (c *RigClient) GetParm(parmName string) (string, error) {
-	response, err := c.getCustom(parseSingleValue, "\\get_parm", parmName)
+func (c *RigClient) SetLevel(vfo VFO, level Level, value float64) error {
+	return c.set("\\set_level", string(vfo), string(level), fmt.Sprintf("%f", value))
+}
+
+func (c *RigClient) GetParm(parameter Parameter) (string, error) {
+	response, err := c.getCustom(parseSingleValue, "\\get_parm", string(parameter))
 	if err != nil {
 		return "", err
 	}
@@ -354,8 +397,29 @@ func (c *RigClient) GetParm(parmName string) (string, error) {
 	return value, nil
 }
 
-func (c *RigClient) SetParm(parmName string, value string) error {
-	return c.set("\\set_parm", parmName, value)
+func (c *RigClient) GetAvailableParameters() ([]Parameter, error) {
+	response, err := c.getCustom(parseSingleValue, "\\get_parm", "?")
+	if err != nil {
+		return nil, err
+	}
+
+	parametersString, err := response.GetString(singleValueKey)
+	if err != nil {
+		return nil, err
+	}
+
+	parts := strings.Split(strings.TrimSpace(parametersString), " ")
+	parameters := make([]Parameter, len(parts))
+	for i := range parts {
+		parameters[i] = Parameter(parts[i])
+	}
+	slices.Sort(parameters)
+
+	return parameters, nil
+}
+
+func (c *RigClient) SetParm(parameter Parameter, value string) error {
+	return c.set("\\set_parm", string(parameter), value)
 }
 
 func (c *RigClient) GetMemory(vfo VFO) (int, error) {
