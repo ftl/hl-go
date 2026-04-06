@@ -54,6 +54,20 @@ func (c *RigClient) getCustom(parseResponse ResponseParser, command string, args
 	return c.conn.ExecuteCustom(request, parseResponse)
 }
 
+func (c *RigClient) getSingleValue(command string, args ...string) (string, error) {
+	response, err := c.getCustom(parseSingleValue, command, args...)
+	if err != nil {
+		return "", err
+	}
+
+	value, err := response.GetString(singleValueKey)
+	if err != nil {
+		return "", err
+	}
+
+	return value, nil
+}
+
 func (c *RigClient) set(command string, args ...string) error {
 	request := Request{
 		Command: command,
@@ -306,12 +320,12 @@ func (c *RigClient) SetAntenna(vfo VFO, antenna int, option int) error {
 }
 
 func (c *RigClient) GetFunc(vfo VFO, function Function) (bool, error) {
-	response, err := c.getCustom(parseSingleValue, "\\get_func", string(vfo), string(function))
+	value, err := c.getSingleValue("\\get_func", string(vfo), string(function))
 	if err != nil {
 		return false, err
 	}
 
-	status, err := response.GetBool(singleValueKey)
+	status, err := parseBool(value)
 	if err != nil {
 		return false, err
 	}
@@ -320,12 +334,7 @@ func (c *RigClient) GetFunc(vfo VFO, function Function) (bool, error) {
 }
 
 func (c *RigClient) GetAvailableFunctions(vfo VFO) ([]Function, error) {
-	response, err := c.getCustom(parseSingleValue, "\\get_func", string(vfo), "?")
-	if err != nil {
-		return nil, err
-	}
-
-	functionsString, err := response.GetString(singleValueKey)
+	functionsString, err := c.getSingleValue("\\get_func", string(vfo), "?")
 	if err != nil {
 		return nil, err
 	}
@@ -345,12 +354,12 @@ func (c *RigClient) SetFunc(vfo VFO, function Function, status bool) error {
 }
 
 func (c *RigClient) GetLevel(vfo VFO, level Level) (float64, error) {
-	response, err := c.getCustom(parseSingleValue, "\\get_level", string(vfo), string(level))
+	valueString, err := c.getSingleValue("\\get_level", string(vfo), string(level))
 	if err != nil {
 		return 0, err
 	}
 
-	value, err := response.GetFloat64(singleValueKey)
+	value, err := parseFloat(valueString)
 	if err != nil {
 		return 0, err
 	}
@@ -359,12 +368,7 @@ func (c *RigClient) GetLevel(vfo VFO, level Level) (float64, error) {
 }
 
 func (c *RigClient) GetAvailableLevels(vfo VFO) ([]Level, error) {
-	response, err := c.getCustom(parseSingleValue, "\\get_level", string(vfo), "?")
-	if err != nil {
-		return nil, err
-	}
-
-	levelsString, err := response.GetString(singleValueKey)
+	levelsString, err := c.getSingleValue("\\get_level", string(vfo), "?")
 	if err != nil {
 		return nil, err
 	}
@@ -384,26 +388,11 @@ func (c *RigClient) SetLevel(vfo VFO, level Level, value float64) error {
 }
 
 func (c *RigClient) GetParm(parameter Parameter) (string, error) {
-	response, err := c.getCustom(parseSingleValue, "\\get_parm", string(parameter))
-	if err != nil {
-		return "", err
-	}
-
-	value, err := response.GetString(singleValueKey)
-	if err != nil {
-		return "", err
-	}
-
-	return value, nil
+	return c.getSingleValue("\\get_parm", string(parameter))
 }
 
 func (c *RigClient) GetAvailableParameters() ([]Parameter, error) {
-	response, err := c.getCustom(parseSingleValue, "\\get_parm", "?")
-	if err != nil {
-		return nil, err
-	}
-
-	parametersString, err := response.GetString(singleValueKey)
+	parametersString, err := c.getSingleValue("\\get_parm", "?")
 	if err != nil {
 		return nil, err
 	}
@@ -599,17 +588,7 @@ func (c *RigClient) SendDTMF(digits string) error {
 }
 
 func (c *RigClient) ReceiveDTMF() (string, error) {
-	response, err := c.getCustom(parseSingleValue, "\\recv_dtmf")
-	if err != nil {
-		return "", err
-	}
-
-	dtmf, err := response.GetString(singleValueKey)
-	if err != nil {
-		return "", err
-	}
-
-	return dtmf, nil
+	return c.getSingleValue("\\recv_dtmf")
 }
 
 func (c *RigClient) GetDCD() (int, error) {
@@ -667,17 +646,7 @@ func (c *RigClient) GetInfo() (string, error) {
 }
 
 func (c *RigClient) GetRigInfo() (string, error) {
-	response, err := c.getCustom(parseSingleValue, "\\get_rig_info")
-	if err != nil {
-		return "", err
-	}
-
-	info, err := response.GetString(singleValueKey)
-	if err != nil {
-		return "", err
-	}
-
-	return info, nil
+	return c.getSingleValue("\\get_rig_info")
 }
 
 func (c *RigClient) GetVFOInfo(vfo VFO) (Frequency, string, int, int, int, error) {
@@ -715,45 +684,15 @@ func (c *RigClient) GetVFOInfo(vfo VFO) (Frequency, string, int, int, int, error
 }
 
 func (c *RigClient) DumpState() (string, error) {
-	response, err := c.getCustom(parseSingleValue, "\\dump_state")
-	if err != nil {
-		return "", err
-	}
-
-	state, err := response.GetString(singleValueKey)
-	if err != nil {
-		return "", err
-	}
-
-	return state, nil
+	return c.getSingleValue("\\dump_state")
 }
 
 func (c *RigClient) DumpCaps() (string, error) {
-	response, err := c.getCustom(parseSingleValue, "\\dump_caps")
-	if err != nil {
-		return "", err
-	}
-
-	caps, err := response.GetString(singleValueKey)
-	if err != nil {
-		return "", err
-	}
-
-	return caps, nil
+	return c.getSingleValue("\\dump_caps")
 }
 
 func (c *RigClient) DumpConf() (string, error) {
-	response, err := c.getCustom(parseSingleValue, "\\dump_conf")
-	if err != nil {
-		return "", err
-	}
-
-	conf, err := response.GetString(singleValueKey)
-	if err != nil {
-		return "", err
-	}
-
-	return conf, nil
+	return c.getSingleValue("\\dump_conf")
 }
 
 func (c *RigClient) Power2mW(power float64, frequency Frequency, mode string) (int, error) {
@@ -789,15 +728,11 @@ func (c *RigClient) SetClock(timestamp time.Time) error {
 }
 
 func (c *RigClient) GetClock() (time.Time, error) {
-	response, err := c.getCustom(parseSingleValue, "\\get_clock")
+	timestamp, err := c.getSingleValue("\\get_clock")
 	if err != nil {
 		return time.Time{}, err
 	}
 
-	timestamp, err := response.GetString(singleValueKey)
-	if err != nil {
-		return time.Time{}, err
-	}
 	if timestamp == "0000-00-00T00:00:00.000+00:00" {
 		return time.Time{}, nil
 	}
@@ -877,17 +812,7 @@ func (c *RigClient) ClientVersion(version string) error {
 }
 
 func (c *RigClient) HamlibVersion() (string, error) {
-	response, err := c.getCustom(parseSingleValue, "\\hamlib_version")
-	if err != nil {
-		return "", err
-	}
-
-	version, err := response.GetString(singleValueKey)
-	if err != nil {
-		return "", err
-	}
-
-	return version, nil
+	return c.getSingleValue("\\hamlib_version")
 }
 
 func (c *RigClient) Test() error {
@@ -935,17 +860,7 @@ func (c *RigClient) SetChannel(channel string) error {
 }
 
 func (c *RigClient) GetChannel(channel string, readOnly bool) (string, error) {
-	response, err := c.getCustom(parseSingleValue, "\\get_channel", channel, boolToHL(readOnly))
-	if err != nil {
-		return "", err
-	}
-
-	value, err := response.GetString(singleValueKey)
-	if err != nil {
-		return "", err
-	}
-
-	return value, nil
+	return c.getSingleValue("\\get_channel", channel, boolToHL(readOnly))
 }
 
 func (c *RigClient) SendCmd(command string) (string, error) {
@@ -1035,16 +950,10 @@ func (c *RigClient) GetVFOList() (string, error) {
 }
 
 func (c *RigClient) GetModes() (map[Mode]ModeBandwidths, error) {
-	response, err := c.getCustom(parseSingleValue, "\\get_modes")
+	modes, err := c.getSingleValue("\\get_modes")
 	if err != nil {
 		return nil, err
 	}
-
-	modes, err := response.GetString(singleValueKey)
-	if err != nil {
-		return nil, err
-	}
-
 	return parseModes(modes)
 }
 
@@ -1173,12 +1082,7 @@ func (c *RigClient) GetSeparator() (string, error) {
 }
 
 func (c *RigClient) GetModeBandwidths(mode string) (ModeBandwidths, error) {
-	response, err := c.getCustom(parseSingleValue, "\\get_mode_bandwidths", mode)
-	if err != nil {
-		return ModeBandwidths{}, err
-	}
-
-	bw, err := response.GetString(singleValueKey)
+	bw, err := c.getSingleValue("\\get_mode_bandwidths", mode)
 	if err != nil {
 		return ModeBandwidths{}, err
 	}
@@ -1222,12 +1126,7 @@ func (c *RigClient) SetConf(token string, value string) error {
 }
 
 func (c *RigClient) GetConf(token string) (string, error) {
-	response, err := c.getCustom(parseSingleValue, "\\get_conf", token)
-	if err != nil {
-		return "", err
-	}
-
-	keyValue, err := response.GetString(singleValueKey)
+	keyValue, err := c.getSingleValue("\\get_conf", token)
 	if err != nil {
 		return "", err
 	}

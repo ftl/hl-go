@@ -32,11 +32,15 @@ func (r Response) GetInt(key string) (int, error) {
 	if !ok {
 		return 0, fmt.Errorf("no %s value", key)
 	}
-	result, err := strconv.Atoi(value)
+	result, err := parseInt(value)
 	if err != nil {
 		return 0, fmt.Errorf("cannot parse %s value: %w", key, err)
 	}
 	return result, nil
+}
+
+func parseInt(s string) (int, error) {
+	return strconv.Atoi(s)
 }
 
 func (r Response) GetFloat64(key string) (float64, error) {
@@ -44,11 +48,15 @@ func (r Response) GetFloat64(key string) (float64, error) {
 	if !ok {
 		return 0, fmt.Errorf("no %s value", key)
 	}
-	result, err := strconv.ParseFloat(value, 64)
+	result, err := parseFloat(value)
 	if err != nil {
 		return 0, fmt.Errorf("cannot parse %s value: %w", key, err)
 	}
 	return result, nil
+}
+
+func parseFloat(s string) (float64, error) {
+	return strconv.ParseFloat(s, 64)
 }
 
 func (r Response) GetBool(key string) (bool, error) {
@@ -56,11 +64,15 @@ func (r Response) GetBool(key string) (bool, error) {
 	if !ok {
 		return false, fmt.Errorf("no %s value", key)
 	}
-	result, err := strconv.ParseBool(value)
+	result, err := parseBool(value)
 	if err != nil {
 		return false, fmt.Errorf("cannot parse %s value: %w", key, err)
 	}
 	return result, nil
+}
+
+func parseBool(s string) (bool, error) {
+	return strconv.ParseBool(s)
 }
 
 type ReturnCode int
