@@ -49,7 +49,7 @@ func (c *RigClient) connect() error {
 
 	automaticReconnect := c.automaticReconnect
 	c.automaticReconnect = false
-	err = c.SetVFOMode(true)
+	err = c.setVFOMode(true)
 	c.automaticReconnect = automaticReconnect
 	if err != nil {
 		conn.Close()
