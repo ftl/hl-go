@@ -59,6 +59,12 @@ func (c *RigClient) ensureConnected() error {
 	return nil
 }
 
+func (c *RigClient) handleConnectionError(err error) {
+	if err != nil {
+		c.conn = nil
+	}
+}
+
 func (c *RigClient) get(command string, args ...string) (Response, error) {
 	err := c.ensureConnected()
 	if err != nil {
@@ -69,7 +75,10 @@ func (c *RigClient) get(command string, args ...string) (Response, error) {
 		Command: command,
 		Args:    args,
 	}
-	return c.conn.Execute(request)
+
+	response, err := c.conn.Execute(request)
+	c.handleConnectionError(err)
+	return response, err
 }
 
 func (c *RigClient) getCustom(parseResponse ResponseParser, command string, args ...string) (Response, error) {
@@ -82,7 +91,10 @@ func (c *RigClient) getCustom(parseResponse ResponseParser, command string, args
 		Command: command,
 		Args:    args,
 	}
-	return c.conn.ExecuteCustom(request, parseResponse)
+
+	response, err := c.conn.ExecuteCustom(request, parseResponse)
+	c.handleConnectionError(err)
+	return response, err
 }
 
 func (c *RigClient) getSingleValue(command string, args ...string) (string, error) {
@@ -114,6 +126,8 @@ func (c *RigClient) set(command string, args ...string) error {
 		Command: command,
 		Args:    args,
 	}
+
 	_, err = c.conn.Execute(request)
+	c.handleConnectionError(err)
 	return err
 }
