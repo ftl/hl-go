@@ -6,29 +6,50 @@ import (
 
 type RigClient struct {
 	conn *Conn
+
+	addr string
 }
 
-func NewRigClient(addr string) (*RigClient, error) {
-	conn, err := Dial(addr)
+func NewRigClient(addr string) *RigClient {
+	return &RigClient{
+		addr: addr,
+	}
+}
+
+func (c *RigClient) Open() error {
+	if c.conn != nil {
+		return nil
+	}
+
+	conn, err := Dial(c.addr)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	result := &RigClient{
-		conn: conn,
-	}
+	c.conn = conn
 
-	err = result.SetVFOMode(true)
+	err = c.SetVFOMode(true)
 	if err != nil {
-		result.Close()
-		return nil, fmt.Errorf("cannot enable VFO mode: %w", err)
+		conn.Close()
+		c.conn = nil
+		return fmt.Errorf("cannot enable VFO mode: %w", err)
 	}
 
-	return result, nil
+	return nil
 }
 
 func (c *RigClient) Close() error {
-	return c.conn.Close()
+	if c.conn == nil {
+		return nil
+	}
+
+	err := c.conn.Close()
+	c.conn = nil
+	return err
+}
+
+func (c *RigClient) IsConnected() bool {
+	return c.conn != nil
 }
 
 func (c *RigClient) get(command string, args ...string) (Response, error) {

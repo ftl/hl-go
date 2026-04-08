@@ -17,17 +17,7 @@ import (
 
 func TestConn(t *testing.T) {
 	runWithRigctld(t, "Conn", func(t *testing.T, addr string) {
-		var err error
-		var conn *hl.Conn
-		for i := range 10 {
-			_ = i
-			conn, err = hl.Dial(addr)
-			if err != nil {
-				time.Sleep(1 * time.Second)
-			} else {
-				break
-			}
-		}
+		conn, err := hl.Dial(addr)
 		require.NoError(t, err)
 
 		var response hl.Response
@@ -68,18 +58,12 @@ func TestConn(t *testing.T) {
 
 func TestRigClient(t *testing.T) {
 	runWithRigctld(t, "RigClient", func(t *testing.T, addr string) {
-		var err error
-		var client *hl.RigClient
-		for i := range 10 {
-			_ = i
-			client, err = hl.NewRigClient(addr)
-			if err != nil {
-				time.Sleep(1 * time.Second)
-			} else {
-				break
-			}
-		}
+		client := hl.NewRigClient(addr)
+		assert.False(t, client.IsConnected())
+
+		err := client.Open()
 		require.NoError(t, err)
+		assert.True(t, client.IsConnected())
 
 		vfoMode, err := client.CheckVFOMode()
 		assert.NoError(t, err)
@@ -132,6 +116,7 @@ func TestRigClient(t *testing.T) {
 
 		err = client.Close()
 		assert.NoError(t, err)
+		assert.False(t, client.IsConnected())
 	})
 }
 
@@ -140,15 +125,25 @@ func runWithRigctld(t *testing.T, name string, f func(t *testing.T, addr string)
 	require.NoError(t, err)
 	addr := fmt.Sprintf("localhost:%d", port)
 
-	rigctld := exec.Command("rigctld", "-m", "1", "-t", strconv.Itoa(port))
-	err = rigctld.Start()
-	require.NoError(t, err)
+	rigctld := startRigctld(t, port)
 
 	t.Run(name, func(t *testing.T) {
+		time.Sleep(1 * time.Second)
 		f(t, addr)
 	})
 
-	err = rigctld.Process.Signal(os.Interrupt)
+	stopRigctld(t, rigctld)
+}
+
+func startRigctld(t *testing.T, port int) *exec.Cmd {
+	rigctld := exec.Command("rigctld", "-m", "1", "-t", strconv.Itoa(port))
+	err := rigctld.Start()
+	require.NoError(t, err)
+	return rigctld
+}
+
+func stopRigctld(t *testing.T, rigctld *exec.Cmd) {
+	err := rigctld.Process.Signal(os.Interrupt)
 	assert.NoError(t, err)
 	rigctld.Wait()
 }
