@@ -52,7 +52,19 @@ func (c *RigClient) IsConnected() bool {
 	return c.conn != nil
 }
 
+func (c *RigClient) ensureConnected() error {
+	if c.conn == nil {
+		return fmt.Errorf("RigClient is not connected")
+	}
+	return nil
+}
+
 func (c *RigClient) get(command string, args ...string) (Response, error) {
+	err := c.ensureConnected()
+	if err != nil {
+		return Response{}, err
+	}
+
 	request := Request{
 		Command: command,
 		Args:    args,
@@ -61,6 +73,11 @@ func (c *RigClient) get(command string, args ...string) (Response, error) {
 }
 
 func (c *RigClient) getCustom(parseResponse ResponseParser, command string, args ...string) (Response, error) {
+	err := c.ensureConnected()
+	if err != nil {
+		return Response{}, err
+	}
+
 	request := Request{
 		Command: command,
 		Args:    args,
@@ -69,6 +86,11 @@ func (c *RigClient) getCustom(parseResponse ResponseParser, command string, args
 }
 
 func (c *RigClient) getSingleValue(command string, args ...string) (string, error) {
+	err := c.ensureConnected()
+	if err != nil {
+		return "", err
+	}
+
 	response, err := c.getCustom(parseSingleValue, command, args...)
 	if err != nil {
 		return "", err
@@ -83,10 +105,15 @@ func (c *RigClient) getSingleValue(command string, args ...string) (string, erro
 }
 
 func (c *RigClient) set(command string, args ...string) error {
+	err := c.ensureConnected()
+	if err != nil {
+		return err
+	}
+
 	request := Request{
 		Command: command,
 		Args:    args,
 	}
-	_, err := c.conn.Execute(request)
+	_, err = c.conn.Execute(request)
 	return err
 }

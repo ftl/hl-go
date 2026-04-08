@@ -56,14 +56,11 @@ func TestConn(t *testing.T) {
 	})
 }
 
-func TestRigClient(t *testing.T) {
+func TestRigClient_RoundTrip(t *testing.T) {
 	runWithRigctld(t, "RigClient", func(t *testing.T, addr string) {
 		client := hl.NewRigClient(addr)
-		assert.False(t, client.IsConnected())
-
 		err := client.Open()
 		require.NoError(t, err)
-		assert.True(t, client.IsConnected())
 
 		vfoMode, err := client.CheckVFOMode()
 		assert.NoError(t, err)
@@ -116,7 +113,30 @@ func TestRigClient(t *testing.T) {
 
 		err = client.Close()
 		assert.NoError(t, err)
+	})
+}
+func TestRigClient_ConnectionHandling(t *testing.T) {
+	runWithRigctld(t, "RigClient", func(t *testing.T, addr string) {
+		client := hl.NewRigClient(addr)
 		assert.False(t, client.IsConnected())
+
+		_, err := client.CheckVFOMode()
+		assert.Error(t, err)
+
+		err = client.Open()
+		require.NoError(t, err)
+		assert.True(t, client.IsConnected())
+
+		vfoMode, err := client.CheckVFOMode()
+		assert.NoError(t, err)
+		assert.True(t, vfoMode)
+
+		err = client.Close()
+		assert.NoError(t, err)
+		assert.False(t, client.IsConnected())
+
+		_, err = client.CheckVFOMode()
+		assert.Error(t, err)
 	})
 }
 
