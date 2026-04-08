@@ -186,6 +186,53 @@ func TestRigClient_AutomaticReconnect(t *testing.T) {
 	stopRigctld(t, rigctld)
 }
 
+func TestRigClient_RigConnectionListener(t *testing.T) {
+	port, err := getFreePort()
+	require.NoError(t, err)
+	addr := fmt.Sprintf("localhost:%d", port)
+
+	notificationCount := 0
+	lastNotifiedState := false
+	listener := hl.RigConnectionListenerFunc(func(connected bool) {
+		notificationCount++
+		lastNotifiedState = connected
+	})
+
+	rigctld := startRigctld(t, port)
+
+	client := hl.NewRigClient(addr)
+	client.Notify(listener)
+
+	err = client.Open(true)
+	assert.Equal(t, 1, notificationCount)
+	assert.True(t, lastNotifiedState)
+
+	_, err = client.CheckVFOMode()
+	assert.Equal(t, 1, notificationCount)
+
+	stopRigctld(t, rigctld)
+
+	_, err = client.CheckVFOMode()
+	assert.Equal(t, 2, notificationCount)
+	assert.False(t, lastNotifiedState)
+
+	rigctld = startRigctld(t, port)
+
+	_, err = client.CheckVFOMode()
+	assert.Equal(t, 3, notificationCount)
+	assert.True(t, lastNotifiedState)
+
+	err = client.Close()
+	assert.Equal(t, 4, notificationCount)
+	assert.False(t, lastNotifiedState)
+
+	_, err = client.CheckVFOMode()
+	assert.Equal(t, 5, notificationCount)
+	assert.True(t, lastNotifiedState)
+
+	stopRigctld(t, rigctld)
+}
+
 func runWithRigctld(t *testing.T, name string, f func(t *testing.T, addr string)) {
 	port, err := getFreePort()
 	require.NoError(t, err)

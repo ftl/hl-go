@@ -4,11 +4,23 @@ import (
 	"fmt"
 )
 
+type RigConnectionListener interface {
+	RigConnected(connected bool)
+}
+
+type RigConnectionListenerFunc func(bool)
+
+func (f RigConnectionListenerFunc) RigConnected(connected bool) {
+	f(connected)
+}
+
 type RigClient struct {
 	addr string
 
 	conn               *Conn
 	automaticReconnect bool
+
+	listeners []any
 }
 
 func NewRigClient(addr string) *RigClient {
@@ -29,6 +41,7 @@ func (c *RigClient) Open(automaticReconnect bool) error {
 func (c *RigClient) connect() error {
 	conn, err := Dial(c.addr)
 	if err != nil {
+		c.handleConnectionError(err)
 		return err
 	}
 
@@ -44,6 +57,7 @@ func (c *RigClient) connect() error {
 		return fmt.Errorf("cannot enable VFO mode: %w", err)
 	}
 
+	c.emitRigConnected(true)
 	return nil
 }
 
@@ -54,6 +68,7 @@ func (c *RigClient) Close() error {
 
 	err := c.conn.Close()
 	c.conn = nil
+	c.emitRigConnected(false)
 	return err
 }
 
@@ -76,6 +91,7 @@ func (c *RigClient) handleConnectionError(err error) {
 	if err != nil {
 		c.conn.Close()
 		c.conn = nil
+		c.emitRigConnected(false)
 	}
 }
 
@@ -144,4 +160,23 @@ func (c *RigClient) set(command string, args ...string) error {
 	_, err = c.conn.Execute(request)
 	c.handleConnectionError(err)
 	return err
+}
+
+func (c *RigClient) Notify(listener any) {
+	c.listeners = append(c.listeners, listener)
+}
+
+func emit[L any](listeners []any, notify func(listener L)) {
+	for i := range listeners {
+		listener, ok := listeners[i].(L)
+		if ok {
+			notify(listener)
+		}
+	}
+}
+
+func (c *RigClient) emitRigConnected(connected bool) {
+	emit(c.listeners, func(listener RigConnectionListener) {
+		listener.RigConnected(connected)
+	})
 }
