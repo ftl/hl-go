@@ -369,8 +369,8 @@ func (c *RigClient) VFOOp(vfo VFO, op string) error {
 	return c.set("\\vfo_op", string(vfo), op)
 }
 
-func (c *RigClient) Scan(vfo VFO, scanFct string, scanChannel int) error {
-	return c.set("\\scan", string(vfo), scanFct, fmt.Sprintf("%d", scanChannel))
+func (c *RigClient) Scan(vfo VFO, scanFct ScanFunction, scanChannel int) error {
+	return c.set("\\scan", string(vfo), string(scanFct), fmt.Sprintf("%d", scanChannel))
 }
 
 func (c *RigClient) GetRepeaterShift(vfo VFO) (string, error) {

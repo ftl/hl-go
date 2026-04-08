@@ -341,3 +341,34 @@ const (
 	UplinkSub
 	UplinkMain
 )
+
+type VFOOp string
+
+const (
+	CopyVFO       VFOOp = "CPY"
+	ExchangeVFO   VFOOp = "XCHG"
+	MemoryFromVFO VFOOp = "FROM_VFO"
+	MemoryToVFO   VFOOp = "TO_VFO"
+	ClearMemory   VFOOp = "MCL"
+	VFOUp         VFOOp = "UP"
+	VFODown       VFOOp = "DOWN"
+	VFOBandUp     VFOOp = "BAND_UP"
+	VFOBandDown   VFOOp = "BAND_DOWN"
+	VFOLeft       VFOOp = "LEFT"
+	VFORight      VFOOp = "RIGHT"
+	TuneVFO       VFOOp = "TUNE"
+	ToggleVFO     VFOOp = "TOGGLE"
+)
+
+type ScanFunction string
+
+const (
+	StopScan     ScanFunction = "STOP"
+	ScanMemory   ScanFunction = "MEM"
+	ScanSelected ScanFunction = "SLCT"
+	ScanPrio     ScanFunction = "PRIO"
+	ScanProg     ScanFunction = "PROG"
+	ScanDelta    ScanFunction = "DELTA"
+	ScanVFO      ScanFunction = "VFO"
+	ScanPipeline ScanFunction = "PLT"
+)
