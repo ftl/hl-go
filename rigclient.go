@@ -5,9 +5,10 @@ import (
 )
 
 type RigClient struct {
-	conn *Conn
-
 	addr string
+
+	conn               *Conn
+	automaticReconnect bool
 }
 
 func NewRigClient(addr string) *RigClient {
@@ -16,11 +17,16 @@ func NewRigClient(addr string) *RigClient {
 	}
 }
 
-func (c *RigClient) Open() error {
+func (c *RigClient) Open(automaticReconnect bool) error {
+	c.automaticReconnect = automaticReconnect
 	if c.conn != nil {
 		return nil
 	}
 
+	return c.connect()
+}
+
+func (c *RigClient) connect() error {
 	conn, err := Dial(c.addr)
 	if err != nil {
 		return err
@@ -28,7 +34,10 @@ func (c *RigClient) Open() error {
 
 	c.conn = conn
 
+	automaticReconnect := c.automaticReconnect
+	c.automaticReconnect = false
 	err = c.SetVFOMode(true)
+	c.automaticReconnect = automaticReconnect
 	if err != nil {
 		conn.Close()
 		c.conn = nil
@@ -53,14 +62,19 @@ func (c *RigClient) IsConnected() bool {
 }
 
 func (c *RigClient) ensureConnected() error {
-	if c.conn == nil {
+	if c.conn != nil {
+		return nil
+	}
+	if !c.automaticReconnect {
 		return fmt.Errorf("RigClient is not connected")
 	}
-	return nil
+
+	return c.connect()
 }
 
 func (c *RigClient) handleConnectionError(err error) {
 	if err != nil {
+		c.conn.Close()
 		c.conn = nil
 	}
 }

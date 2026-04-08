@@ -59,7 +59,7 @@ func TestConn(t *testing.T) {
 func TestRigClient_RoundTrip(t *testing.T) {
 	runWithRigctld(t, "RigClient", func(t *testing.T, addr string) {
 		client := hl.NewRigClient(addr)
-		err := client.Open()
+		err := client.Open(false)
 		require.NoError(t, err)
 
 		vfoMode, err := client.CheckVFOMode()
@@ -115,7 +115,8 @@ func TestRigClient_RoundTrip(t *testing.T) {
 		assert.NoError(t, err)
 	})
 }
-func TestRigClient_ConnectionHandling(t *testing.T) {
+
+func TestRigClient_ConnectionState(t *testing.T) {
 	runWithRigctld(t, "RigClient", func(t *testing.T, addr string) {
 		client := hl.NewRigClient(addr)
 		assert.False(t, client.IsConnected())
@@ -123,7 +124,7 @@ func TestRigClient_ConnectionHandling(t *testing.T) {
 		_, err := client.CheckVFOMode()
 		assert.Error(t, err)
 
-		err = client.Open()
+		err = client.Open(false)
 		require.NoError(t, err)
 		assert.True(t, client.IsConnected())
 
@@ -140,6 +141,51 @@ func TestRigClient_ConnectionHandling(t *testing.T) {
 	})
 }
 
+func TestRigClient_AutomaticReconnect(t *testing.T) {
+	port, err := getFreePort()
+	require.NoError(t, err)
+	addr := fmt.Sprintf("localhost:%d", port)
+
+	rigctld := startRigctld(t, port)
+
+	client := hl.NewRigClient(addr)
+	assert.False(t, client.IsConnected())
+
+	_, err = client.CheckVFOMode()
+	assert.Error(t, err)
+
+	err = client.Open(true)
+	require.NoError(t, err)
+	assert.True(t, client.IsConnected())
+
+	vfoMode, err := client.CheckVFOMode()
+	assert.NoError(t, err)
+	assert.True(t, vfoMode)
+
+	stopRigctld(t, rigctld)
+
+	_, err = client.CheckVFOMode()
+	assert.Error(t, err)
+	assert.False(t, client.IsConnected())
+
+	rigctld = startRigctld(t, port)
+
+	vfoMode, err = client.CheckVFOMode()
+	assert.NoError(t, err)
+	assert.True(t, vfoMode)
+
+	err = client.Close()
+	assert.NoError(t, err)
+	assert.False(t, client.IsConnected())
+
+	vfoMode, err = client.CheckVFOMode()
+	assert.NoError(t, err)
+	assert.True(t, client.IsConnected())
+	assert.True(t, vfoMode)
+
+	stopRigctld(t, rigctld)
+}
+
 func runWithRigctld(t *testing.T, name string, f func(t *testing.T, addr string)) {
 	port, err := getFreePort()
 	require.NoError(t, err)
@@ -148,7 +194,6 @@ func runWithRigctld(t *testing.T, name string, f func(t *testing.T, addr string)
 	rigctld := startRigctld(t, port)
 
 	t.Run(name, func(t *testing.T) {
-		time.Sleep(1 * time.Second)
 		f(t, addr)
 	})
 
@@ -159,11 +204,12 @@ func startRigctld(t *testing.T, port int) *exec.Cmd {
 	rigctld := exec.Command("rigctld", "-m", "1", "-t", strconv.Itoa(port))
 	err := rigctld.Start()
 	require.NoError(t, err)
+	time.Sleep(1 * time.Second)
 	return rigctld
 }
 
 func stopRigctld(t *testing.T, rigctld *exec.Cmd) {
-	err := rigctld.Process.Signal(os.Interrupt)
+	err := rigctld.Process.Signal(os.Kill)
 	assert.NoError(t, err)
 	rigctld.Wait()
 }
