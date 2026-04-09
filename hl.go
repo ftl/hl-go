@@ -871,7 +871,7 @@ const (
 	// priority channel for activity while operating normally. The scanChannel argument
 	// specifies the priority channel number.
 	ScanPrio ScanFunction = "PRIO"
-	// ScanProg performs a programmed frequency scan between two stored frequency limits.
+	// ScanProg performs a programmed frequency scan between two stored frequency limits.F
 	// The rig steps through a frequency range, pausing when the squelch opens.
 	ScanProg ScanFunction = "PROG"
 	// ScanDelta performs a delta-f scan centered on the current frequency. The rig scans
@@ -883,3 +883,25 @@ const (
 	// between monitoring multiple channels in a round-robin fashion.
 	ScanPipeline ScanFunction = "PLT"
 )
+
+// RigInfo combines the most important information about the rig's current state in one struct.
+type RigInfo struct {
+	VFOs          []RigInfoVFO
+	SplitActive   bool
+	SATModeActive bool
+	Rig           string
+	App           string
+	Version       string
+	Model         string
+	CRC           string
+}
+
+// RigInfoVFO contains the current state of one VFO as part of RigInfo.
+type RigInfoVFO struct {
+	VFO       VFO
+	Frequency Frequency
+	Mode      Mode
+	Passband  Bandwidth
+	RXActive  bool
+	TXActive  bool
+}

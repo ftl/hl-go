@@ -928,6 +928,154 @@ func (c *RigClient) GetRigInfo() (string, error) {
 	return c.getSingleValue("\\get_rig_info")
 }
 
+func parseRigInfo(s string) (RigInfo, error) {
+	lines := strings.Split(s, singleValueLineDelimiter)
+	if len(lines) == 0 {
+		return RigInfo{}, fmt.Errorf("empty input")
+	}
+
+	result := RigInfo{}
+
+	for _, line := range lines {
+		if value, ok := strings.CutPrefix(line, "VFO="); ok {
+			vfoInfo, err := parseRigInfoVFO(value)
+			if err != nil {
+				return RigInfo{}, err
+			}
+			result.VFOs = append(result.VFOs, vfoInfo)
+		}
+		if strings.HasPrefix(line, "Split=") {
+			parts := strings.Split(line, " ")
+			if len(parts) != 2 {
+				return RigInfo{}, fmt.Errorf("get_rig_info: unexpected line: %s", line)
+			}
+			splitString, ok := strings.CutPrefix(parts[0], "Split=")
+			if !ok {
+				return RigInfo{}, fmt.Errorf("get_rig_info: unexpected line: %s", line)
+			}
+			split, err := parseBool(splitString)
+			if err != nil {
+				return RigInfo{}, fmt.Errorf("get_rig_info: unexpected line: %w", err)
+			}
+			result.SplitActive = split
+			satModeString, ok := strings.CutPrefix(parts[1], "SatMode=")
+			if !ok {
+				return RigInfo{}, fmt.Errorf("get_rig_info: unexpected line: %s", line)
+			}
+			satMode, err := parseBool(satModeString)
+			if err != nil {
+				return RigInfo{}, fmt.Errorf("get_rig_info: unexpected line: %w", err)
+			}
+			result.SATModeActive = satMode
+		}
+		if value, ok := strings.CutPrefix(line, "Rig="); ok {
+			result.Rig = value
+			continue
+		}
+		if value, ok := strings.CutPrefix(line, "App="); ok {
+			result.App = value
+			continue
+		}
+		if value, ok := strings.CutPrefix(line, "Version="); ok {
+			result.Version = value
+			continue
+		}
+		if value, ok := strings.CutPrefix(line, "Model="); ok {
+			result.Model = value
+			continue
+		}
+		if value, ok := strings.CutPrefix(line, "CRC="); ok {
+			result.CRC = value
+			continue
+		}
+		if value, ok := strings.CutPrefix(line, "RPRT "); ok {
+			returnCodeInt, err := parseInt(value)
+			if err != nil {
+				return RigInfo{}, fmt.Errorf("get_rig_info: invalid report: %w", err)
+			}
+			returnCode := ReturnCode(returnCodeInt)
+			if returnCode != RigOk {
+				return RigInfo{}, ReturnCodeAsError(returnCode)
+			}
+			return result, nil
+		}
+	}
+
+	// normal, err := extractBandwidthFromPart(lines[1], "Normal=")
+	// if err != nil {
+	// 	return RigInfo{}, err
+	// }
+	// narrow, err := extractBandwidthFromPart(lines[2], "Narrow=")
+	// if err != nil {
+	// 	return RigInfo{}, err
+	// }
+	// wide, err := extractBandwidthFromPart(lines[3], "Wide=")
+	// if err != nil {
+	// 	return RigInfo{}, err
+	// }
+
+	return RigInfo{}, fmt.Errorf("get_rig_info: missing RPRT line")
+}
+
+func parseRigInfoVFO(s string) (RigInfoVFO, error) {
+	parts := strings.Split(s, " ")
+	if len(parts) != 6 {
+		return RigInfoVFO{}, fmt.Errorf("unexpected VFO info: %q", s)
+	}
+
+	result := RigInfoVFO{
+		VFO: VFO(parts[0]),
+	}
+
+	valueString, ok := strings.CutPrefix(parts[1], "Freq=")
+	if !ok {
+		return RigInfoVFO{}, fmt.Errorf("unexpected VFO info: %q", s)
+	}
+	frequency, err := parseFloat(valueString)
+	if err != nil {
+		return RigInfoVFO{}, fmt.Errorf("invalid frequency: %q", valueString)
+	}
+	result.Frequency = Frequency(frequency)
+
+	valueString, ok = strings.CutPrefix(parts[2], "Mode=")
+	if !ok {
+		return RigInfoVFO{}, fmt.Errorf("unexpected VFO info: %q", s)
+	}
+	result.Mode = Mode(valueString)
+
+	valueString, ok = strings.CutPrefix(parts[3], "Width=")
+	if !ok {
+		return RigInfoVFO{}, fmt.Errorf("unexpected VFO info: %q", s)
+	}
+	passband, err := parseFloat(valueString)
+	if err != nil {
+		return RigInfoVFO{}, fmt.Errorf("invalid passband: %q", valueString)
+	}
+	result.Passband = Bandwidth(passband)
+
+	valueString, ok = strings.CutPrefix(parts[4], "RX=")
+	if !ok {
+		return RigInfoVFO{}, fmt.Errorf("unexpected VFO info: %q", s)
+	}
+	rxActive, err := parseBool(valueString)
+	if err != nil {
+		return RigInfoVFO{}, fmt.Errorf("invalid rx flag: %q", valueString)
+	}
+	result.RXActive = rxActive
+
+	valueString, ok = strings.CutPrefix(parts[5], "TX=")
+	if !ok {
+		return RigInfoVFO{}, fmt.Errorf("unexpected VFO info: %q", s)
+	}
+	txActive, err := parseBool(valueString)
+	if err != nil {
+		return RigInfoVFO{}, fmt.Errorf("invalid tx flag: %q", valueString)
+	}
+	result.TXActive = txActive
+
+	return result, nil
+}
+
 // GetVFOInfo retrieves detailed information for a specific VFO in a single command.
 //
 // The vfo parameter selects which VFO to query.
