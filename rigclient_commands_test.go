@@ -40,3 +40,11 @@ func TestParseRigInfo(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, expected, actual)
 }
+
+func TestParseHexBytes(t *testing.T) {
+	input := "0xFE 0xFE 0x94 0x03 0xFD"
+	expected := []byte{0xFE, 0xFE, 0x94, 0x03, 0xFD}
+	actual, err := parseHexBytes(input)
+	assert.NoError(t, err)
+	assert.Equal(t, expected, actual)
+}

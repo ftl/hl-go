@@ -77,10 +77,6 @@ func TestRigClient_RoundTrip(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, timestamp.IsZero())
 
-		reply, err := client.SendRaw("1", []byte{3})
-		assert.NoError(t, err)
-		assert.Equal(t, "03", reply)
-
 		bandwidths, err := client.GetModeBandwidths("CW")
 		assert.NoError(t, err)
 		assert.Equal(t, hl.ModeBandwidths{Mode: hl.ModeCW, Normal: 500, Narrow: 50, Wide: 2_400}, bandwidths)
@@ -110,6 +106,11 @@ func TestRigClient_RoundTrip(t *testing.T) {
 		assert.Equal(t, 14, len(parameters))
 		assert.Equal(t, hl.AFIFOutputParm, parameters[0])
 		assert.Equal(t, hl.TimeParm, parameters[13])
+
+		bytesIn := []byte{0xFE, 0xFE, 0x94, 0x03, 0xFD}
+		bytesOut, err := client.SendRaw("icom", bytesIn)
+		assert.NoError(t, err)
+		assert.Equal(t, bytesIn, bytesOut)
 
 		err = client.Close()
 		assert.NoError(t, err)

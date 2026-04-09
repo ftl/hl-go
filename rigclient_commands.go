@@ -2,6 +2,7 @@ package hl
 
 import (
 	"bufio"
+	"encoding/hex"
 	"fmt"
 	"slices"
 	"strconv"
@@ -1278,18 +1279,37 @@ func (c *RigClient) GetLockMode() (bool, error) {
 // The rawCommand parameter is the raw byte sequence to send to the rig (sent as hex-encoded).
 //
 // It returns the raw response from the rig.
-func (c *RigClient) SendRaw(terminator string, rawCommand []byte) (string, error) {
-	response, err := c.get("\\send_raw", terminator, fmt.Sprintf("%02x", rawCommand))
+func (c *RigClient) SendRaw(terminator string, rawCommand []byte) ([]byte, error) {
+	response, err := c.get("\\send_raw", terminator, bytesToHL(rawCommand))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	answer, err := response.GetString("Send raw answer")
+	bytesString, err := response.GetString("Send raw answer")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return answer, nil
+	return parseHexBytes(bytesString)
+}
+
+func parseHexBytes(s string) ([]byte, error) {
+	parts := strings.Split(strings.TrimSpace(s), " ")
+
+	result := make([]byte, 0, len(parts))
+	for _, part := range parts {
+		hexValue, ok := strings.CutPrefix(part, "0x")
+		if !ok {
+			return nil, fmt.Errorf("invalid hex number: %s", part)
+		}
+		value, err := hex.DecodeString(hexValue)
+		if err != nil {
+			return nil, err
+		}
+		result = append(result, value...)
+	}
+
+	return result, nil
 }
 
 // ClientVersion reports the client's version string to the rigctld server. This is stored
