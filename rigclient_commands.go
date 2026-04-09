@@ -1404,47 +1404,47 @@ func (c *RigClient) GetChannel(channel string, readOnly bool) (string, error) {
 	return c.getSingleValue("\\get_channel", channel, boolToHL(readOnly))
 }
 
-// SendCmd sends a raw command string directly to the rig and returns the reply.
-// This bypasses hamlib's command abstraction and sends the command as a single line
-// to the rig's native protocol. Spaces in the command are preserved.
+// SendCmd sends a raw command given as byte slice directly to the rig and returns the reply.
+// This bypasses hamlib's command abstraction and sends the command to the rig's native protocol.
+// Spaces in the command are preserved.
 //
-// The command parameter is the raw command string to send to the rig.
+// The command parameter is the raw command as byte slice to send to the rig.
 //
 // It returns the raw reply from the rig.
-func (c *RigClient) SendCmd(command string) (string, error) {
-	response, err := c.get("\\send_cmd", command)
+func (c *RigClient) SendCmd(command []byte) ([]byte, error) {
+	response, err := c.get("\\send_cmd", string(command))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	reply, err := response.GetString("Reply")
+	bytesString, err := response.GetString("Reply")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return reply, nil
+	return parseHexBytes(bytesString)
 }
 
-// SendCmdRx sends a raw command string with space-separated parameters directly to the
-// rig and returns the reply. Unlike SendCmd, this variant takes the command as separate
-// parameters.
+// SendCmdRx sends a raw command given as byte slice  directly to the rig and returns the reply.
+// Unlike SendCmd, this variant takes an additional parameter that describes the terminator byte
+// of the reply.
 //
-// The command parameter is the raw command string to send to the rig.
-// The reply parameter controls the expected reply handling.
+// The command parameter is the raw command byte slice to send to the rig.
+// The terminator parameter defines the byte value that used by the rig to terminate its reply.
 //
 // It returns the raw reply from the rig.
-func (c *RigClient) SendCmdRx(command string, reply int) (string, error) {
-	response, err := c.get("\\send_cmd_rx", command, fmt.Sprintf("%d", reply))
+func (c *RigClient) SendCmdRx(command []byte, terminator byte) ([]byte, error) {
+	response, err := c.get("\\send_cmd_rx", string(command), fmt.Sprintf("%d", terminator))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	value, err := response.GetString("Reply")
+	bytesString, err := response.GetString("Reply")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return value, nil
+	return parseHexBytes(bytesString)
 }
 
 // StopVoiceMemory stops any voice memory playback currently in progress.
