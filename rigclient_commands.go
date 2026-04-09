@@ -1518,16 +1518,27 @@ func (c *RigClient) GetCache() (int, error) {
 // GetVFOList retrieves the list of VFOs available on the rig.
 //
 // It returns a space-separated string of VFO name tokens (e.g. "VFOA VFOB").
-func (c *RigClient) GetVFOList() (string, error) {
+func (c *RigClient) GetVFOList() ([]VFO, error) {
 	response, err := c.get("\\get_vfo_list")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	vfos, err := response.GetString("VFOs")
+	reply, err := response.GetString("VFOs")
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+
+	// There seems to be a bug in how the VFO list is prepared in rigctld that appends stray bytes to the end of the list.
+	reply = strings.TrimRight(reply, " \x01")
+	reply = strings.TrimSpace(reply)
+
+	parts := strings.Split(reply, " ")
+	vfos := make([]VFO, len(parts))
+	for i := range parts {
+		vfos[i] = VFO(parts[i])
+	}
+	slices.Sort(vfos)
 
 	return vfos, nil
 }

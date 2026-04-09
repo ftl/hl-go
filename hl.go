@@ -182,6 +182,8 @@ const (
 	// MainVFO targets the main receiver's VFO. Used on rigs with a Main/Sub receiver
 	// architecture where each receiver has a single VFO (e.g. Icom IC-7610).
 	MainVFO VFO = "Main"
+	// MEM targets the rig's memory instead of a real VFO.
+	MEM VFO = "MEM"
 	// RXVFO targets whichever VFO is currently used for receiving. When split operation
 	// is active, this differs from TXVFO.
 	RXVFO VFO = "RX"

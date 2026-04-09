@@ -66,6 +66,12 @@ func TestRigClient_RoundTrip(t *testing.T) {
 		assert.NoError(t, err)
 		assert.True(t, vfoMode)
 
+		vfos, err := client.GetVFOList()
+		assert.NoError(t, err)
+		assert.Equal(t, 10, len(vfos))
+		assert.Equal(t, hl.MEM, vfos[0])
+		assert.Equal(t, hl.VFOC, vfos[9])
+
 		err = client.SetFrequency(hl.VFOA, 10102000)
 		assert.NoError(t, err)
 
