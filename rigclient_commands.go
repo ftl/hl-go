@@ -1387,8 +1387,10 @@ func (c *RigClient) GetTransceive() (TransceiveMode, error) {
 	return TransceiveMode(trn), nil
 }
 
-// SetChannel stores channel data to the rig's memory. The channel data format is
-// rig-dependent.
+// SetChannel stores channel data to the rig's memory.
+//
+// This command is highly dependent on the actual backend implementation. Most backends do
+// not support this command. YMMV
 //
 // The channel parameter is the channel data to store.
 func (c *RigClient) SetChannel(channel string) error {
@@ -1396,6 +1398,9 @@ func (c *RigClient) SetChannel(channel string) error {
 }
 
 // GetChannel retrieves channel data from the rig's memory.
+//
+// This command is highly dependent on the actual backend implementation. Most backends do
+// not support this command. YMMV.
 //
 // The channel parameter identifies which channel to retrieve.
 // The readOnly parameter, when true, retrieves the channel data without side effects
