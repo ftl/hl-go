@@ -217,6 +217,13 @@ type Frequency = hamradio.Frequency
 // passband for the current mode".
 type Bandwidth = Frequency
 
+const (
+	// DefaultBandwidth indicates to use the rig's default bandwidth for the given mode.
+	DefaultBandwidth Bandwidth = 0
+	// UnchangedBandwidth indicates to leave the bandwidth unchanged.
+	UnchangedBandwidth Bandwidth = -1
+)
+
 // Mode represents a radio operating mode (modulation type). The mode determines how
 // the radio signal is modulated and demodulated. Common modes include USB and LSB for
 // single sideband voice, CW for Morse code, FM for frequency modulation, and AM for
