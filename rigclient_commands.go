@@ -587,8 +587,8 @@ func (c *RigClient) SetBank(vfo VFO, bank int) error {
 //   - "RIGHT": select the right VFO (rig-dependent)
 //   - "TUNE": start the antenna tuner
 //   - "TOGGLE": toggle between VFO A and VFO B
-func (c *RigClient) VFOOp(vfo VFO, op string) error {
-	return c.set("\\vfo_op", string(vfo), op)
+func (c *RigClient) VFOOp(vfo VFO, op VFOOp) error {
+	return c.set("\\vfo_op", string(vfo), string(op))
 }
 
 // Scan starts or stops a scan operation on the specified VFO.
