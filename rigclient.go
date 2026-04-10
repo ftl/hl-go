@@ -41,7 +41,6 @@ func (c *RigClient) Open(automaticReconnect bool) error {
 func (c *RigClient) connect() error {
 	conn, err := Dial(c.addr)
 	if err != nil {
-		c.handleConnectionError(err)
 		return err
 	}
 
