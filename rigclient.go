@@ -87,6 +87,10 @@ func (c *RigClient) ensureConnected() error {
 }
 
 func (c *RigClient) handleConnectionError(err error) {
+	if c.conn == nil {
+		return
+	}
+
 	if err != nil {
 		c.conn.Close()
 		c.conn = nil
