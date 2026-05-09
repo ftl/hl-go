@@ -1,7 +1,10 @@
 package hl
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"net"
 )
 
 type RigConnectionListener interface {
@@ -82,20 +85,24 @@ func (c *RigClient) ensureConnected() error {
 	if !c.automaticReconnect {
 		return fmt.Errorf("RigClient is not connected")
 	}
-
-	return c.connect()
+	err := c.connect()
+	return err
 }
 
-func (c *RigClient) handleConnectionError(err error) {
+func (c *RigClient) disconnectOnConnectionError(err error) {
 	if c.conn == nil {
 		return
 	}
 
-	if err != nil {
-		c.conn.Close()
-		c.conn = nil
-		c.emitRigConnected(false)
+	var opErr *net.OpError
+	isConnectionError := errors.As(err, &opErr) || errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF)
+	if !isConnectionError {
+		return
 	}
+
+	c.conn.Close()
+	c.conn = nil
+	c.emitRigConnected(false)
 }
 
 func (c *RigClient) get(command string, args ...string) (Response, error) {
@@ -110,7 +117,7 @@ func (c *RigClient) get(command string, args ...string) (Response, error) {
 	}
 
 	response, err := c.conn.Execute(request)
-	c.handleConnectionError(err)
+	c.disconnectOnConnectionError(err)
 	return response, err
 }
 
@@ -126,7 +133,7 @@ func (c *RigClient) getCustom(parseResponse ResponseParser, command string, args
 	}
 
 	response, err := c.conn.ExecuteCustom(request, parseResponse)
-	c.handleConnectionError(err)
+	c.disconnectOnConnectionError(err)
 	return response, err
 }
 
@@ -161,7 +168,7 @@ func (c *RigClient) set(command string, args ...string) error {
 	}
 
 	_, err = c.conn.Execute(request)
-	c.handleConnectionError(err)
+	c.disconnectOnConnectionError(err)
 	return err
 }
 
