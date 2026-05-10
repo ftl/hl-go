@@ -22,7 +22,7 @@ func TestParseRigInfoVFO(t *testing.T) {
 }
 
 func TestParseRigInfo(t *testing.T) {
-	input := "get_rig_info: currVFO\nVFO=VFOA Freq=145000000 Mode=FM Width=15000 RX=1 TX=1\nVFO=VFOB Freq=146000000 Mode=FM Width=15000 RX=0 TX=0\nSplit=0 SatMode=0\nRig=Dummy\nApp=BLAH\nVersion=20241103 1.1.0\nModel=1\nCRC=0x00690aee\n\nRPRT 0\n"
+	input := "get_rig_info: currVFO\nVFO=VFOA Freq=145000000 Mode=FM Width=15000 RX=1 TX=1\nVFO=VFOB Freq=146000000 Mode=FM Width=15000 RX=0 TX=0\nSplit=0 SatMode=0\nRig=Dummy\nApp=BLAH\nVersion=20241103 1.1.0\nModel=1\nCRC=0x00690aee\n\n"
 	expected := RigInfo{
 		VFOs: []RigInfoVFO{
 			{VFOA, 145_000_000, ModeFM, 15_000, true, true},

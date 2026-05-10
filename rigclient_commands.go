@@ -993,33 +993,8 @@ func parseRigInfo(s string) (RigInfo, error) {
 			result.CRC = value
 			continue
 		}
-		if value, ok := strings.CutPrefix(line, "RPRT "); ok {
-			returnCodeInt, err := parseInt(value)
-			if err != nil {
-				return RigInfo{}, fmt.Errorf("get_rig_info: invalid report: %w", err)
-			}
-			returnCode := ReturnCode(returnCodeInt)
-			if returnCode != RigOk {
-				return RigInfo{}, ReturnCodeAsError(returnCode)
-			}
-			return result, nil
-		}
 	}
-
-	// normal, err := extractBandwidthFromPart(lines[1], "Normal=")
-	// if err != nil {
-	// 	return RigInfo{}, err
-	// }
-	// narrow, err := extractBandwidthFromPart(lines[2], "Narrow=")
-	// if err != nil {
-	// 	return RigInfo{}, err
-	// }
-	// wide, err := extractBandwidthFromPart(lines[3], "Wide=")
-	// if err != nil {
-	// 	return RigInfo{}, err
-	// }
-
-	return RigInfo{}, fmt.Errorf("get_rig_info: missing RPRT line")
+	return result, nil
 }
 
 func parseRigInfoVFO(s string) (RigInfoVFO, error) {
