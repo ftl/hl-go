@@ -922,11 +922,15 @@ func (c *RigClient) GetInfo() (string, error) {
 	return info, nil
 }
 
-// GetRigInfo retrieves comprehensive rig information as a formatted multi-line string.
-// This includes VFO frequencies, modes, bandwidths, split status, and other rig state
-// information in a structured format.
-func (c *RigClient) GetRigInfo() (string, error) {
-	return c.getSingleValue("\\get_rig_info")
+// GetRigInfo retrieves comprehensive rig information. This includes VFO frequencies, modes,
+// bandwidths, split status, and other rig state information in a structured format.
+func (c *RigClient) GetRigInfo() (RigInfo, error) {
+	response, err := c.getSingleValue("\\get_rig_info")
+	if err != nil {
+		return RigInfo{}, err
+	}
+
+	return parseRigInfo(response)
 }
 
 func parseRigInfo(s string) (RigInfo, error) {
