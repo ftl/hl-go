@@ -51,7 +51,7 @@ func (c *RigClient) connect() error {
 
 	automaticReconnect := c.automaticReconnect
 	c.automaticReconnect = false
-	err = c.setVFOMode(true)
+	err = c.ensureVFOMode()
 	c.automaticReconnect = automaticReconnect
 	if err != nil {
 		conn.Close()
@@ -61,6 +61,18 @@ func (c *RigClient) connect() error {
 
 	c.emitRigConnected(true)
 	return nil
+}
+
+func (c *RigClient) ensureVFOMode() error {
+	enabled, err := c.CheckVFOMode()
+	if err != nil {
+		return err
+	}
+	if enabled {
+		return nil
+	}
+
+	return c.setVFOMode(true)
 }
 
 func (c *RigClient) Close() error {

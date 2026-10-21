@@ -140,6 +140,30 @@ func TestRigClient_ConnectionState(t *testing.T) {
 	})
 }
 
+func TestRigClient_OpenWithVFOModeEnabledByServer(t *testing.T) {
+	port, err := getFreePort()
+	require.NoError(t, err)
+	addr := fmt.Sprintf("localhost:%d", port)
+
+	rigctld := startRigctld(t, port, "--vfo")
+	defer stopRigctld(t, rigctld)
+
+	client := hl.NewRigClient(addr)
+	err = client.Open(false)
+	require.NoError(t, err)
+
+	vfoMode, err := client.CheckVFOMode()
+	assert.NoError(t, err)
+	assert.True(t, vfoMode)
+
+	frequency, err := client.GetFrequency(hl.VFOA)
+	assert.NoError(t, err)
+	assert.NotZero(t, frequency)
+
+	err = client.Close()
+	assert.NoError(t, err)
+}
+
 func TestRigClient_AutomaticReconnect(t *testing.T) {
 	port, err := getFreePort()
 	require.NoError(t, err)
@@ -246,8 +270,8 @@ func runWithRigctld(t *testing.T, name string, f func(t *testing.T, addr string)
 	stopRigctld(t, rigctld)
 }
 
-func startRigctld(t *testing.T, port int) *exec.Cmd {
-	rigctld := exec.Command("rigctld", "-m", "1", "-t", strconv.Itoa(port))
+func startRigctld(t *testing.T, port int, args ...string) *exec.Cmd {
+	rigctld := exec.Command("rigctld", append([]string{"-m", "1", "-t", strconv.Itoa(port)}, args...)...)
 	err := rigctld.Start()
 	require.NoError(t, err)
 	time.Sleep(1 * time.Second)
